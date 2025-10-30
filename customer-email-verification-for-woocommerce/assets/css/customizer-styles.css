@@ -1,0 +1,13 @@
+.customize-control code {
+    padding: 10px;
+    display: block;
+    background: #f9f9f9;
+    color: #505050;
+}
+li#accordion-panel-widgets {
+    display: none !important;
+}
+/* activity-panel custom popup create end */
+.wp-core-ui .button-primary{
+    background-color: #3b64d3 !important;
+}

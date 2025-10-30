@@ -1,0 +1,318 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Customer Email verification for WooCommerce\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-04-22 11:41+0000\n"
+"PO-Revision-Date: 2025-07-11 09:35+0000\n"
+"Last-Translator: John Doe\n"
+"Language-Team: Hindi\n"
+"Language: hi_IN\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Loco https://localise.biz/\n"
+"X-Loco-Version: 2.5.5; wp-5.8.2"
+
+#: includes/views/cev_admin_endpoint_popup_template.php:78
+#| msgid "4-digits code"
+msgid "4-digit code"
+msgstr "4-अंकीय कोड"
+
+#: includes/class-wc-customer-email-verification-admin.php:654
+msgid "Actions"
+msgstr "कार्रवाई"
+
+#: includes/customizer/class-cev-customizer.php:173
+#: includes/customizer/verification-widget-message.php:237
+msgid "Available variables"
+msgstr "Available variables"
+
+#. Name of the plugin
+msgid "Customer Email Verification for WooCommerce"
+msgstr "WooCommerce के लिए ग्राहक ईमेल सत्यापन"
+
+#: includes/class-wc-customer-email-verification-admin.php:820
+#| msgid ""
+#| "Customer verification\n"
+msgid "Customer verification"
+msgstr "ग्राहक सत्यापन"
+
+#: includes/customizer/verification-widget-message.php:106
+msgid "Didn't receive an email? {cev_resend_verification}"
+msgstr "एक ईमेल नहीं मिला? {cev_resend_verification}"
+
+#. %s: Try again link
+#: includes/views/cev_signup_popup.php:26
+#: includes/views/front/preview_cev_popup_page.php:17
+#, php-format
+msgid "Didn’t receive an email? <strong>%s</strong>"
+msgstr "क्या आपको कोई ईमेल नहीं मिला है? % s"
+
+#: includes/views/cev_admin_endpoint_popup_template.php:12
+msgid "Didn’t receive an email? Try Again"
+msgstr "ईमेल नहीं मिला? पुनः प्रयास करें"
+
+#: includes/customizer/class-cev-customizer.php:125
+msgid "Email Heading"
+msgstr "ईमेल शीर्षक"
+
+#: includes/class-wc-customer-email-verification-admin.php:653
+#| msgid "Email for Verification"
+msgid "Email verification"
+msgstr "सत्यापन के लिए ईमेल करें"
+
+#: includes/class-wc-customer-email-verification-admin.php:822
+msgid "Email verification status:"
+msgstr "ईमेल सत्यापन स्थिति:"
+
+#: includes/class-wc-customer-email-verification-admin.php:510
+#: includes/class-wc-customer-email-verification-admin.php:577
+#| msgid "Verification Success Message"
+msgid "Email verification success message"
+msgstr "सत्यापन सफलता संदेश"
+
+#: includes/customizer/verification-widget-message.php:216
+msgid "Footer content"
+msgstr "पाद सामग्री"
+
+#: includes/class-wc-customer-email-verification-admin.php:314
+#: includes/class-wc-customer-email-verification-admin.php:318
+msgid "Go Pro"
+msgstr "पेशेवर बनो"
+
+#: includes/customizer/verification-widget-message.php:169
+msgid "Header text"
+msgstr "शीर्ष लेख पाठ"
+
+#. Author URI of the plugin
+msgid "https://www.zorem.com"
+msgstr "https://www.zorem.com"
+
+#. URI of the plugin
+msgid ""
+"https://www.zorem.com/products/customer-email-verification-for-woocommerce/"
+msgstr ""
+"https://www.zorem.com/products/customer-email-verification-for-woocommerce/"
+
+#: includes/views/cev_admin_endpoint_popup_template.php:3
+#: includes/views/cev_signup_popup.php:3
+#: includes/views/front/preview_cev_popup_page.php:3
+msgid "johny@example.com"
+msgstr "johny@example.com"
+
+#: includes/customizer/verification-widget-message.php:132
+msgid "Overlay background Color"
+msgstr "ओवरले पृष्ठभूमि रंग"
+
+#. %s: search WooCommerce plugin link
+#: customer-email-verification-for-woocommerce.php:144
+#, php-format
+msgid ""
+"Please install and activate %1$sWooCommerce%2$s for Customer Email "
+"Verification for WooCommerce!"
+msgstr ""
+"WooCommerce के लिए ग्राहक ईमेल सत्यापन के लिए कृपया %1$sWooCommerce%2$s "
+"स्थापित और सक्रिय करें!"
+
+#: includes/class-wc-customer-email-verification-email-common.php:185
+msgid "Resend Confirmation Email"
+msgstr "पुष्टिकरण ईमेल पुन: भेजें"
+
+#: includes/class-wc-customer-email-verification-email-common.php:233
+msgid "Resend confirmation email"
+msgstr "पुष्टिकरण ईमेल पुन: भेजें"
+
+#: includes/class-wc-customer-email-verification-admin.php:803
+#: includes/class-wc-customer-email-verification-admin.php:851
+#| msgid "Resend Verification Email"
+msgid "Resend verification email"
+msgstr "सत्यापन ईमेल पुनः भेजे"
+
+#: includes/views/admin_options_settings.php:33
+#, fuzzy
+#| msgid "Save changes"
+msgid "Save Changes"
+msgstr "परिवर्तनों को सुरक्षित करें"
+
+#: includes/class-wc-customer-email-verification-admin.php:947
+msgid "Send verification email"
+msgstr "सत्यापन ईमेल भेजें"
+
+#: includes/class-wc-customer-email-verification-admin.php:286
+#: includes/class-wc-customer-email-verification-admin.php:290
+msgid "Settings"
+msgstr ""
+
+#: customer-email-verification-for-woocommerce.php:331
+#| msgid "Sign Up Email Verification"
+msgid "Sign up email verification"
+msgstr "ईमेल सत्यापन पर हस्ताक्षर करें"
+
+#: includes/views/admin_options_settings.php:26
+msgid "Signup Verification"
+msgstr ""
+
+#: includes/class-wc-customer-email-verification-email-common.php:193
+msgid "Site Title"
+msgstr "सत्यापन ईमेल भेजें"
+
+#: includes/class-wc-customer-email-verification-admin.php:521
+#: includes/class-wc-customer-email-verification-admin.php:588
+#| msgid "Skip email verification for the selected user roles"
+msgid "Skip email verification for the selected user roles:"
+msgstr "चयनित उपयोगकर्ता भूमिकाओं के लिए ईमेल सत्यापन छोड़ें"
+
+#: includes/customizer/class-cev-customizer.php:101
+msgid "Subject"
+msgstr ""
+
+#. Description of the plugin
+msgid ""
+"The Customer verification helps WooCommerce store owners to reduce "
+"registration spam by requiring customers to verify their email address when "
+"they register an account on your store, before they can access their account "
+"area."
+msgstr ""
+"ग्राहक सत्यापन से WooCommerce स्टोर मालिकों को पंजीकरण के स्पैम को कम करने "
+"के लिए ग्राहकों को अपने ईमेल पते को सत्यापित करने की आवश्यकता होती है, जब वे "
+"आपके स्टोर क्षेत्र में प्रवेश करने से पहले आपके स्टोर पर खाता पंजीकृत करने "
+"में मदद करते हैं।"
+
+#: includes/class-wc-customer-email-verification-admin.php:512
+#: includes/class-wc-customer-email-verification-admin.php:579
+msgid ""
+"the message that will appear on the top of the my-account or checkout page "
+"after successful email verification"
+msgstr ""
+"संदेश जो सफल ईमेल सत्यापन के बाद मेरे खाते या चेकआउट पृष्ठ के शीर्ष पर दिखाई "
+"देगा"
+
+#: includes/class-wc-customer-email-verification-email-common.php:197
+#: includes/class-wc-customer-email-verification-email-common.php:288
+#: includes/views/cev_signup_popup.php:4
+#: includes/views/front/preview_cev_popup_page.php:4
+msgid "Try Again"
+msgstr "पुनः प्रयास करें"
+
+#: includes/class-wc-customer-email-verification-admin.php:855
+msgid "Un-verify email"
+msgstr "ईमेल को अन-सत्यापित करें"
+
+#: includes/class-wc-customer-email-verification-email-common.php:173
+msgid "User display name"
+msgstr "उपयोगकर्ता प्रदर्शन नाम"
+
+#: includes/class-wc-customer-email-verification-email-common.php:177
+msgid "User email"
+msgstr "उपयोगकर्ता ईमेल"
+
+#: includes/class-wc-customer-email-verification-email-common.php:169
+msgid "User login"
+msgstr "उपयोगकर्ता लॉगिन"
+
+#: includes/class-wc-customer-email-verification-admin.php:791
+#| msgid "User Unverified."
+msgid "User unverified."
+msgstr "उपयोगकर्ता असत्यापित।"
+
+#: includes/class-wc-customer-email-verification-admin.php:783
+#| msgid "User Verified Successfully."
+msgid "User verified successfully."
+msgstr "उपयोगकर्ता सत्यापित सफलतापूर्वक।"
+
+#: includes/views/cev_admin_endpoint_popup_template.php:95
+msgid "Verification code does not match"
+msgstr "सत्यापन कोड मेल नहीं खाता है"
+
+#: includes/customizer/class-customer-verification-new-customizer.php:35
+#| msgid "Verification Email"
+msgid "Verification email"
+msgstr "सत्यापन ईमेल"
+
+#: includes/class-wc-customer-email-verification-admin.php:774
+#| msgid "Verification Email Successfully Sent."
+msgid "Verification email successfully sent."
+msgstr "सत्यापन ईमेल सफलतापूर्वक भेजा गया।"
+
+#: includes/views/cev_admin_endpoint_popup_template.php:53
+#: includes/views/cev_signup_popup.php:77
+#: includes/views/front/preview_cev_popup_page.php:66
+msgid "Verification icon"
+msgstr ""
+
+#: includes/customizer/class-customer-verification-new-customizer.php:44
+#| msgid "Verification in Account Email"
+msgid "Verification in new account email"
+msgstr "खाता ईमेल में सत्यापन"
+
+#: includes/class-wc-customer-email-verification-email-common.php:181
+msgid "Verification link"
+msgstr "सत्यापन लिंक"
+
+#: includes/customizer/class-cev-customizer.php:149
+msgid "Verification Message"
+msgstr "सत्यापन संदेश"
+
+#: includes/class-wc-customer-email-verification-email-common.php:189
+msgid "Verification Pin"
+msgstr "सत्यापन पिन"
+
+#: includes/customizer/class-customer-verification-new-customizer.php:27
+#| msgid "Verification widget style"
+msgid "Verification widget"
+msgstr "सत्यापन विजेट"
+
+#: includes/views/cev_admin_endpoint_popup_template.php:114
+msgid "Verify code"
+msgstr "कोड सत्यापित करें"
+
+#: includes/class-wc-customer-email-verification-admin.php:847
+msgid "Verify email manually"
+msgstr "ईमेल को मैन्युअल रूप से सत्यापित करें"
+
+#: includes/views/cev_admin_endpoint_popup_template.php:11
+#: includes/views/cev_signup_popup.php:24
+#: includes/views/front/preview_cev_popup_page.php:15
+msgid "Verify it's you."
+msgstr ""
+
+#: includes/customizer/verification-widget-message.php:104
+msgid "Verify its you."
+msgstr "इसका सत्यापन करें।"
+
+#: includes/class-wc-customer-email-verification-admin.php:946
+msgid "Verify users email"
+msgstr "उपयोगकर्ताओं को ईमेल सत्यापित करें"
+
+#. %s: Customer email address
+#: includes/views/cev_admin_endpoint_popup_template.php:65
+#: includes/views/cev_signup_popup.php:89
+#: includes/customizer/verification-widget-message.php:105
+#: includes/views/front/preview_cev_popup_page.php:76
+#, fuzzy
+#| msgid ""
+#| "We sent verification code to  {customer_email}. To verify your email "
+#| "address, please check your inbox and enter the code below."
+msgid ""
+"We sent a verification code. To verify your email address, please check your "
+"inbox and enter the code below."
+msgstr ""
+"हमने {customer_email} को सत्यापन कोड भेजा है। अपना ईमेल पता सत्यापित करने के "
+"लिए, कृपया अपना इनबॉक्स देखें और नीचे दिया गया कोड दर्ज करें।"
+
+#: includes/customizer/verification-widget-message.php:150
+msgid "Widget background Color"
+msgstr "विजेट पृष्ठभूमि रंग"
+
+#: includes/class-wc-customer-email-verification-admin.php:513
+#: includes/class-wc-customer-email-verification-admin.php:515
+#: includes/class-wc-customer-email-verification-admin.php:580
+#: includes/class-wc-customer-email-verification-admin.php:582
+#| msgid "Your Email is verified!"
+msgid "Your email is verified!"
+msgstr "आपका ईमेल सत्यापित है!"
+
+#. Author of the plugin
+msgid "zorem"
+msgstr "ज़ोरेम"
