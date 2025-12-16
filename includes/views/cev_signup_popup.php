@@ -100,7 +100,7 @@ $content_align = get_option( 'cev_content_align', 'center' );
 
 									<button id="verify-otp-button" style="display: none;" type="button"><?php esc_html_e( 'Verify', 'customer-email-verification' ); ?></button>
 
-									<p class="resend_sucsess" style="color: green; display:none"><?php esc_html_e( 'Otp Sent Successfully', 'customer-email-verification' ); ?></p>
+									<p class="resend_success" style="color: green; display:none"><?php esc_html_e( 'Otp Sent Successfully', 'customer-email-verification' ); ?></p>
 								</div>
 							</section>
 

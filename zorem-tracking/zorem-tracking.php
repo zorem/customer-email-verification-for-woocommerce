@@ -322,7 +322,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 		
 			if ( function_exists( 'ini_get' ) ) {
 				$server_data['php_post_max_size']  = size_format( wc_let_to_num( ini_get( 'post_max_size' ) ) );
-				$server_data['php_time_limt']      = ini_get( 'max_execution_time' );
+				$server_data['php_time_limit']     = ini_get( 'max_execution_time' );
 				$server_data['php_max_input_vars'] = ini_get( 'max_input_vars' );
 				$server_data['php_suhosin']        = extension_loaded( 'suhosin' ) ? 'Yes' : 'No';
 			}

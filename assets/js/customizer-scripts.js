@@ -18,7 +18,7 @@ jQuery(document).ready(function() {
             var url;
             if ( isExpanded ) {
 				jQuery('#save').trigger('click');
-                url = cev_customizer.seperate_email_preview_url;
+                url = cev_customizer.separate_email_preview_url;
                 api.previewer.previewUrl.set( url );
             }
         } );

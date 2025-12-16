@@ -103,7 +103,7 @@ class WC_Customer_Email_Verification_Email {
 	}
 	
 	/*
-	 * This function gets executed from different places when ever a new user is registered or resend verifcation email is sent.
+	 * This function gets executed from different places when ever a new user is registered or resend verification email is sent.
 	 */
 	public function new_user_registration( $user_id ) {
 		
@@ -150,7 +150,7 @@ class WC_Customer_Email_Verification_Email {
 		$secret      = get_user_meta( $this->user_id, 'customer_email_verification_code', true );
 		$create_link = $secret . '@' . $this->user_id;
 		$hyperlink   = add_query_arg( array(
-			'cusomer_email_verify' => base64_encode( $create_link ),
+			'customer_email_verify' => base64_encode( $create_link ),
 		), get_the_permalink( $this->my_account ) );		
 		$link  = '<a href="' . $hyperlink . '">"Email verification link"</a>';
 
@@ -163,8 +163,8 @@ class WC_Customer_Email_Verification_Email {
 	 */
 	public function authenticate_user_by_email() {
 		
-		if ( isset( $_GET['cusomer_email_verify'] ) && '' !== $_GET['cusomer_email_verify'] ) { // WPCS: input var ok, CSRF ok.
-			$user_meta = explode( '@', base64_decode( wc_clean( $_GET['cusomer_email_verify'] ) ) ); // WPCS: input var ok, CSRF ok.
+		if ( isset( $_GET['customer_email_verify'] ) && '' !== $_GET['customer_email_verify'] ) { // WPCS: input var ok, CSRF ok.
+			$user_meta = explode( '@', base64_decode( wc_clean( $_GET['customer_email_verify'] ) ) ); // WPCS: input var ok, CSRF ok.
 			if ( 'true' === get_user_meta( (int) $user_meta[1], 'customer_email_verified', true ) ) {
 				$this->is_user_already_verified = true;
 			}
@@ -304,7 +304,7 @@ class WC_Customer_Email_Verification_Email {
 			}
 			
 			$cev_enable_email_verification = get_option( 'cev_enable_email_verification', 1 );
-			$cev_redirect_after_successfull_verification = get_option( 'cev_redirect_after_successfull_verification', $this->my_account );
+			$cev_redirect_after_successful_verification = get_option( 'cev_redirect_after_successful_verification', $this->my_account );
 			$redirect_url = wc_get_account_endpoint_url( 'email-verification' );
 			$redirect_url_my_account = wc_get_account_endpoint_url( 'dashboard' );
 			$logout_url = wc_get_account_endpoint_url( 'customer-logout' );				
@@ -358,7 +358,7 @@ class WC_Customer_Email_Verification_Email {
 		if ( $cev_email_verification_pin['pin'] == $cev_pin ) {
 			$my_account = woo_customer_email_verification()->my_account;
 			
-			$redirect_page_id = get_option('cev_redirect_page_after_varification', $my_account);
+			$redirect_page_id = get_option('cev_redirect_page_after_verification', $my_account);
 			
 			update_user_meta( get_current_user_id(), 'customer_email_verified', 'true' );
 			update_user_meta( get_current_user_id(), 'cev_user_resend_times', 0 );	

@@ -8,7 +8,7 @@ class WC_Customer_Email_Verification_Email_Common {
 
 	public $wuev_user_id = null;
 	public $wuev_myaccount_page_id = null;
-	public $registerd_user_email = null;
+	public $registered_user_email = null;
 	
 	/**
 	 * Initialize the main plugin function
@@ -238,7 +238,7 @@ class WC_Customer_Email_Verification_Email_Common {
 	
 	public function cev_user_verification_pin() {
 
-		$user_email = $this->registerd_user_email;
+		$user_email = $this->registered_user_email;
 		global $wpdb;
 		$email_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}cev_user_log WHERE email = %s", $user_email));
 		if ($email_exists) {

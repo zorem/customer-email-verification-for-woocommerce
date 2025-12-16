@@ -169,9 +169,9 @@ jQuery(document).ready(function($) {
                 },
                 success: function(response) {
                     if (response.data.email) {
-                        $('.resend_sucsess').show();
+                        $('.resend_success').show();
                         setTimeout(function() {
-                            $('.resend_sucsess').hide();
+                            $('.resend_success').hide();
                         }, 5000); // Hide after 5 seconds
                     } else {
                         console.log('No email found in response.data');
