@@ -24,7 +24,7 @@ jQuery(document).on('click', '.cev_dashicons_icon_unverify_user', function(e) {
 	var id = jQuery(this).attr('id');
 	var unverify_btn = jQuery(this);
 	var ajax_data = {
-		action: 'cev_manualy_user_verify_in_user_menu',
+		action: 'cev_manually_user_verify_in_user_menu',
 		id: id,
 		wp_nonce : jQuery(this).attr('wp_nonce'),
 		actin_type: 'unverify_user',	
@@ -61,7 +61,7 @@ jQuery(document).on('click', '.cev_dashicons_icon_verify_user', function(e) {
 	
 	var verify_btn = jQuery(this);
 	var ajax_data = {
-		action: 'cev_manualy_user_verify_in_user_menu',
+		action: 'cev_manually_user_verify_in_user_menu',
 		id: jQuery(this).attr("id"),
 		wp_nonce : jQuery(this).attr('wp_nonce'),
 		actin_type: 'verify_user',
@@ -96,7 +96,7 @@ jQuery(document).on('click', '.cev_dashicons_icon_resend_email', function(e) {
     });
 	var resend_btn = jQuery(this);
 	var ajax_data = {
-		action: 'cev_manualy_user_verify_in_user_menu',
+		action: 'cev_manually_user_verify_in_user_menu',
 		id: jQuery(this).attr("id"),
 		wp_nonce : jQuery(this).attr('wp_nonce'),
 		actin_type: 'resend_email',				

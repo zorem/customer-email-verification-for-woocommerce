@@ -241,7 +241,7 @@ class CEV_Signup_Verification {
 				)
 			);
 		}
-		 WC_customer_email_verification_email_Common()->registerd_user_email  = $recipient;
+		 WC_customer_email_verification_email_Common()->registered_user_email  = $recipient;
 		$result = false;		
 		
 		$email_subject = get_option( 'cev_verification_email_subject', $cev_initialise_customizer_settings->defaults['cev_verification_email_subject'] );
@@ -340,9 +340,9 @@ class CEV_Signup_Verification {
 	}
 	public function authenticate_user_by_email_link() {
 		global $wpdb;
-		if ( isset( $_GET['cusomer_email_verify'] ) && '' !== $_GET['cusomer_email_verify'] ) {
-			$cusomer_email_verify = wc_clean( $_GET['cusomer_email_verify'] );
-			$user_meta = explode( '@', base64_decode( $cusomer_email_verify ) ); 
+		if ( isset( $_GET['customer_email_verify'] ) && '' !== $_GET['customer_email_verify'] ) {
+			$customer_email_verify = wc_clean( $_GET['customer_email_verify'] );
+			$user_meta = explode( '@', base64_decode( $customer_email_verify ) ); 
 			$email_secret_code = $user_meta[0];
 	
 			$result = $wpdb->get_row(

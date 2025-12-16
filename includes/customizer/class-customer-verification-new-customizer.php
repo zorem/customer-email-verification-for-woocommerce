@@ -146,7 +146,7 @@ class Wc_Cev_Customizer {
 			wp_localize_script('cev-customizer-scripts', 'cev_customizer', array(
 				'ajax_url'              => admin_url('admin-ajax.php'),				
 				'trigger_click'        => '#accordion-section-' . $section . ' h3',
-				'seperate_email_preview_url'    => $this->seperate_email_preview_url(),		
+				'separate_email_preview_url'    => $this->separate_email_preview_url(),		
 				'my_account_email_preview_url'  => $this->my_account_email_preview_url(),
 				'verification_widget_preview_url'    => $this->verification_widget_preview_url(),
 				'verification_widget_message_preview_url'    => $this->verification_widget_message_preview_url(),
@@ -167,11 +167,11 @@ class Wc_Cev_Customizer {
 	 * Get Customizer URL
 	 *
 	 */
-	public function seperate_email_preview_url() {		
-		$seperate_email_preview_url = add_query_arg( array(
+	public function separate_email_preview_url() {		
+		$separate_email_preview_url = add_query_arg( array(
 			'cev-email-preview' => '1',
 		), home_url( '' ) );		
-		return $seperate_email_preview_url;
+		return $separate_email_preview_url;
 	}
 	
 	/**

@@ -48,7 +48,7 @@
 .cev_admin_content {
     vertical-align: top;
 }
-.menu_devider {
+.menu_divider {
     border-top: 1px solid #e0e0e0;
     margin-bottom: 15px;
 }
@@ -440,7 +440,7 @@ tr.border_class:last-child{
 .rtl .tgl + .tgl-btn:after {
     right: 0;
 }
-select#cev_redirect_after_successfull_verification{
+select#cev_redirect_after_successful_verification{
     width: 140px;
 }
 fieldset.customer_level {
@@ -569,7 +569,7 @@ button.button-primary.btn_cev_preview_outline_free:hover,button.button-primary.b
 	box-shadow: none;
 }
 
-/*fornt */
+/*front */
 .cev-popup {
     position: fixed;
     top: 0;
@@ -1187,7 +1187,7 @@ h1.zorem-layout-cev__header-breadcrumbs {
     align-items: center;
     margin-left: auto;
 }
-.botton_border {
+.bottom_border {
     border-bottom: 1px solid #e0e0e0;
 }
 .tab_section_heading {

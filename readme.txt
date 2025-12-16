@@ -217,7 +217,7 @@ Explore more at [zorem.com](https://www.zorem.com/)
 * Enhancement - Updated edit user page design for Email Verification panel
 * Enhancement - Update Customer View settings page design and remove frontend message options
 * Enhancement - Added functionality of live preview of  Verification widget
-* Enhancement - Aaded verification sucess message in general settings.
+* Enhancement - Added verification success message in general settings.
 * Dev - Tested with WP 5.6 and WC 4.8
 
 

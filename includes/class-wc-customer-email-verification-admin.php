@@ -60,7 +60,7 @@ class WC_Customer_Email_Verification_Admin {
 			add_filter( 'admin_body_class', array( $this, 'cev_post_admin_body_class' ), 100 );
 		}
 		
-		add_action( 'wp_ajax_cev_manualy_user_verify_in_user_menu', array( $this, 'cev_manualy_user_verify_in_user_menu') );
+		add_action( 'wp_ajax_cev_manually_user_verify_in_user_menu', array( $this, 'cev_manually_user_verify_in_user_menu') );
 
 		// Delete user Ajax
 		add_action( 'wp_ajax_delete_user', array( $this, 'cev_delete_user' ), 4);
@@ -249,7 +249,7 @@ class WC_Customer_Email_Verification_Admin {
 				<?php include 'views/activity_panel.php'; ?>						
 				<div class="cev_nav_div">	
 					<?php $this->get_html_menu_tab( $this->get_cev_tab_settings_data()); ?>
-					<div class="menu_devider"></div>
+					<div class="menu_divider"></div>
 					<?php
 					require_once( 'views/admin_options_settings.php' );
 					require_once( 'views/cev_users_tab.php');			
@@ -527,20 +527,20 @@ class WC_Customer_Email_Verification_Admin {
 			// 'cev_enter_account_after_registration' => array(
 			// 	'type'		=> 'checkbox',
 			// 	'show' => true,
-			// 	'tooltip' 		=> __('Allow your customers to access their account for the first time after registration before they verify the email address', 'customer-emial-verification-for-woocommerce'),
-			// 	'title' => __( 'Allow first login after registration without email verification', 'customer-emial-verification-for-woocommerce' ),				
+			// 	'tooltip' 		=> __('Allow your customers to access their account for the first time after registration before they verify the email address', 'customer-email-verification-for-woocommerce'),
+			// 	'title' => __( 'Allow first login after registration without email verification', 'customer-email-verification-for-woocommerce' ),				
 			// 	'Default'   => '',
 			// 	'class'     => '',
 			// ),
 			// 'cev_email_for_verification' => array(
 			// 	'type'		=> 'checkbox',
 			// 	'show' => true,
-			// 	'tooltip' 		=> __('if you select this option, the verification message, code and link will be added in New Account Emails. The separate email verification will be sent only when the customer (or admin) resend verification', 'customer-emial-verification-for-woocommerce'),
-			// 	'title' => __( 'Verification code in new account email', 'customer-emial-verification-for-woocommerce' ),				
+			// 	'tooltip' 		=> __('if you select this option, the verification message, code and link will be added in New Account Emails. The separate email verification will be sent only when the customer (or admin) resend verification', 'customer-email-verification-for-woocommerce'),
+			// 	'title' => __( 'Verification code in new account email', 'customer-email-verification-for-woocommerce' ),				
 			// 	'Default'   => '',
 			// 	'class'     => '',
 			// ),
-			// 'cev_redirect_page_after_varification' => array(
+			// 'cev_redirect_page_after_verification' => array(
 			// 	'type'		=> 'dropdown',
 			// 	'title'		=> __( 'Page to redirect after successful verification', 'customer-email-verification-for-woocommerce' ),				
 			// 	'class'		=> 'redirect_page border_class',
@@ -700,7 +700,7 @@ class WC_Customer_Email_Verification_Admin {
 		return $val;
 	}
 	
-	public function cev_manualy_user_verify_in_user_menu() {
+	public function cev_manually_user_verify_in_user_menu() {
 		
 		if ( isset( $_POST['wp_nonce'] ) && wp_verify_nonce( wc_clean( $_POST['wp_nonce'] ), 'wc_cev_email' ) ) { 
 		
