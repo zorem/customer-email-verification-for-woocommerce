@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Customer Email verification for WooCommerce\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-11 09:31+0000\n"
+"POT-Creation-Date: 2026-02-12 09:40+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -15,12 +15,36 @@ msgstr ""
 "X-Generator: Loco https://localise.biz/\n"
 "X-Loco-Version: 2.3.1; wp-5.3.2"
 
+#: includes/views/admin_options_settings.php:147
+msgid "10 min"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:260
+msgid "15 Days"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:129
+msgid "4-digit"
+msgstr ""
+
 #: includes/views/cev_admin_endpoint_popup_template.php:78
 msgid "4-digit code"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:654
+#: includes/class-wc-customer-email-verification-admin.php:657
 msgid "Actions"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:601
+msgid "Active"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:166
+msgid "Allow 3 Attempts"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:534
+msgid "API Protection"
 msgstr ""
 
 #: includes/customizer/class-cev-customizer.php:173
@@ -28,20 +52,58 @@ msgstr ""
 msgid "Available variables"
 msgstr ""
 
+#: includes/views/cev_addons_tab.php:491
+msgid "CEV FREE"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:495
+msgid "CEV PRO"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:39
+msgid ""
+"Check our documentation or contact our support team if you have any "
+"questions."
+msgstr ""
+
+#: includes/views/admin_options_settings.php:63
+msgid "Checkout Verification Type"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:137
+msgid "Choose if you wish to set expiry time to the OTP."
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:490
+msgid "Current"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:516
+msgid "Custom Limits"
+msgstr ""
+
 #. Name of the plugin
 msgid "Customer Email Verification for WooCommerce"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:820
+#: includes/class-wc-customer-email-verification-admin.php:823
 msgid "Customer verification"
 msgstr ""
 
+#: includes/views/cev_addons_tab.php:508
+msgid "Customize OTP digit length and set expiration time."
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:526
+msgid "Detect new devices, new locations, and inactive logins."
+msgstr ""
+
+#: includes/views/cev_signup_popup.php:25
 #: includes/customizer/verification-widget-message.php:106
 msgid "Didn't receive an email? {cev_resend_verification}"
 msgstr ""
 
 #. %s: Try again link
-#: includes/views/cev_signup_popup.php:26
 #: includes/views/front/preview_cev_popup_page.php:17
 #, php-format
 msgid "Didn’t receive an email? <strong>%s</strong>"
@@ -51,29 +113,93 @@ msgstr ""
 msgid "Didn’t receive an email? Try Again"
 msgstr ""
 
+#: includes/views/cev_addons_tab.php:532
+msgid "Disable Store API checkout to prevent bypassing verification."
+msgstr ""
+
+#: includes/views/admin_options_settings.php:95
+msgid "Disable WooCommerce Store API Checkout"
+msgstr ""
+
 #: includes/customizer/class-cev-customizer.php:125
 msgid "Email Heading"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:653
+#: includes/class-wc-customer-email-verification-admin.php:656
 msgid "Email verification"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:822
+#: includes/views/cev_addons_tab.php:501
+msgid "Email Verification at Checkout"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:21
+msgid "Email verification at checkout"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:27
+msgid "Email verification settings"
+msgstr ""
+
+#: includes/class-wc-customer-email-verification-admin.php:825
 msgid "Email verification status:"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:510
-#: includes/class-wc-customer-email-verification-admin.php:577
+#: includes/views/admin_options_settings.php:191
+msgid "Email Verification Success Message"
+msgstr ""
+
+#: includes/class-wc-customer-email-verification-admin.php:513
+#: includes/class-wc-customer-email-verification-admin.php:580
 msgid "Email verification success message"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:53
+msgid "Enable Checkout Verification"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:219
+msgid "Enable Login Authentication"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:41
+msgid "Enable Signup Verification"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:580
+msgid "Extend your store's capabilities with our ecosystem"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:488
+msgid "Feature Comparison"
 msgstr ""
 
 #: includes/customizer/verification-widget-message.php:216
 msgid "Footer content"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:314
-#: includes/class-wc-customer-email-verification-admin.php:318
+#: includes/views/cev_addons_tab.php:504
+msgid "Full Checkout Verification"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:510
+msgid "Fully Configurable"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:25
+msgid "Fully customizable verification emails"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:111
+msgid "General Settings"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:568
+msgid "GET STARTED WITH PRO"
+msgstr ""
+
+#: includes/class-wc-customer-email-verification-admin.php:317
+#: includes/class-wc-customer-email-verification-admin.php:321
 msgid "Go Pro"
 msgstr ""
 
@@ -90,10 +216,77 @@ msgid ""
 "https://www.zorem.com/products/customer-email-verification-for-woocommerce/"
 msgstr ""
 
+#: includes/views/admin_options_settings.php:67
+msgid "Inline"
+msgstr ""
+
 #: includes/views/cev_admin_endpoint_popup_template.php:3
 #: includes/views/cev_signup_popup.php:3
 #: includes/views/front/preview_cev_popup_page.php:3
 msgid "johny@example.com"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:258
+msgid "Last login more than"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:603
+msgid "Learn More"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:514
+msgid "Limit the number of resend attempts to prevent abuse."
+msgstr ""
+
+#: includes/views/admin_options_settings.php:174
+msgid "Limit the number of resend attempts."
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:519
+#: includes/views/admin_options_settings.php:207
+msgid "Login Authentication"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:243
+msgid "Login from a new device"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:250
+msgid "Login from a new location"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:38
+msgid "Need help?"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:503 includes/views/cev_addons_tab.php:509
+#: includes/views/cev_addons_tab.php:515 includes/views/cev_addons_tab.php:521
+#: includes/views/cev_addons_tab.php:527 includes/views/cev_addons_tab.php:533
+msgid "Not Available"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:136
+msgid "OTP Expiration"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:23
+msgid "OTP expiration & resend limits"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:119
+msgid "OTP Length"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:507
+msgid "OTP Length & Expiration"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:522
+msgid "OTP-Based Login"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:22
+msgid "OTP-based login authentication"
 msgstr ""
 
 #: includes/customizer/verification-widget-message.php:132
@@ -108,6 +301,62 @@ msgid ""
 "Verification for WooCommerce!"
 msgstr ""
 
+#: includes/views/admin_options_settings.php:68
+msgid "Popup"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:579
+msgid "Powerful Add-ons"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:537
+msgid "Premium Support"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:540
+msgid "Priority Support"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:538
+msgid "Priority ticket handling and dedicated help center access."
+msgstr ""
+
+#: includes/views/admin_options_settings.php:56
+#: includes/views/admin_options_settings.php:98
+#: includes/views/admin_options_settings.php:122
+#: includes/views/admin_options_settings.php:140
+#: includes/views/admin_options_settings.php:159
+#: includes/views/admin_options_settings.php:177
+#: includes/views/admin_options_settings.php:222
+msgid "PRO"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:494
+msgid "Recommended"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:83
+msgid "Require checkout verification only for free orders"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:502
+msgid "Require email verification before completing checkout."
+msgstr ""
+
+#: includes/views/admin_options_settings.php:76
+msgid ""
+"Require email verification only when Create an account during checkout is "
+"selected"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:230
+msgid "Require OTP verification for unrecognized login"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:520
+msgid "Require OTP verification for unrecognized login attempts."
+msgstr ""
+
 #: includes/class-wc-customer-email-verification-email-common.php:185
 msgid "Resend Confirmation Email"
 msgstr ""
@@ -116,21 +365,25 @@ msgstr ""
 msgid "Resend confirmation email"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:803
-#: includes/class-wc-customer-email-verification-admin.php:851
+#: includes/views/admin_options_settings.php:173
+msgid "Resend Limit Message"
+msgstr ""
+
+#: includes/class-wc-customer-email-verification-admin.php:806
+#: includes/class-wc-customer-email-verification-admin.php:854
 msgid "Resend verification email"
 msgstr ""
 
-#: includes/views/admin_options_settings.php:33
-msgid "Save Changes"
+#: includes/views/admin_options_settings.php:273
+msgid "Save"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:947
+#: includes/class-wc-customer-email-verification-admin.php:950
 msgid "Send verification email"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:286
-#: includes/class-wc-customer-email-verification-admin.php:290
+#: includes/class-wc-customer-email-verification-admin.php:289
+#: includes/class-wc-customer-email-verification-admin.php:293
 msgid "Settings"
 msgstr ""
 
@@ -138,21 +391,38 @@ msgstr ""
 msgid "Sign up email verification"
 msgstr ""
 
-#: includes/views/admin_options_settings.php:26
-msgid "Signup Verification"
-msgstr ""
-
 #: includes/class-wc-customer-email-verification-email-common.php:193
 msgid "Site Title"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:521
-#: includes/class-wc-customer-email-verification-admin.php:588
+#: includes/class-wc-customer-email-verification-admin.php:524
+#: includes/class-wc-customer-email-verification-admin.php:591
 msgid "Skip email verification for the selected user roles:"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:528
+msgid "Smart Detection"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:539
+msgid "Standard Only"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:476
+msgid ""
+"Stop worrying about fake registrations and unauthorized access. Switch from "
+"<strong>basic email verification</strong> to a <a href=\"https://www.zorem."
+"com/product/customer-email-verification/?utm_source=wp-admin&utm_medium=cev-"
+"go-pro&utm_campaign=hero\" target=\"_blank\">fully secured verification "
+"powerhouse</a>."
 msgstr ""
 
 #: includes/customizer/class-cev-customizer.php:101
 msgid "Subject"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:472
+msgid "Take Your Email Verification to the Next Level"
 msgstr ""
 
 #. Description of the plugin
@@ -163,22 +433,57 @@ msgid ""
 "area."
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:512
-#: includes/class-wc-customer-email-verification-admin.php:579
+#: includes/views/admin_options_settings.php:192
+msgid ""
+"The message that will appear on the top of the my-account or checkout page "
+"after successful email verification"
+msgstr ""
+
+#: includes/class-wc-customer-email-verification-admin.php:515
+#: includes/class-wc-customer-email-verification-admin.php:582
 msgid ""
 "the message that will appear on the top of the my-account or checkout page "
 "after successful email verification"
 msgstr ""
 
+#: includes/views/admin_options_settings.php:183
+msgid "Too many attempts, please contact us for further assistance"
+msgstr ""
+
 #: includes/class-wc-customer-email-verification-email-common.php:197
 #: includes/class-wc-customer-email-verification-email-common.php:288
-#: includes/views/cev_signup_popup.php:4
 #: includes/views/front/preview_cev_popup_page.php:4
 msgid "Try Again"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:855
+#: includes/class-wc-customer-email-verification-admin.php:858
 msgid "Un-verify email"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:18
+msgid "Unlock Advanced Email Verification with CEV PRO"
+msgstr ""
+
+#: includes/views/admin_options_settings.php:237
+msgid "Unrecognized Login Conditions:"
+msgstr ""
+
+#: includes/views/cev_addons_tab.php:525
+msgid "Unrecognized Login Detection"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:24
+msgid "Unrecognized login detection"
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:19
+msgid ""
+"Upgrade to CEV PRO to secure your WooCommerce store with advanced email "
+"verification and login authentication beyond the basics."
+msgstr ""
+
+#: includes/views/cev_pro_sidebar.php:28
+msgid "UPGRADE TO CEV PRO→"
 msgstr ""
 
 #: includes/class-wc-customer-email-verification-email-common.php:173
@@ -193,11 +498,11 @@ msgstr ""
 msgid "User login"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:791
+#: includes/class-wc-customer-email-verification-admin.php:794
 msgid "User unverified."
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:783
+#: includes/class-wc-customer-email-verification-admin.php:786
 msgid "User verified successfully."
 msgstr ""
 
@@ -209,12 +514,17 @@ msgstr ""
 msgid "Verification email"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:774
+#: includes/views/cev_addons_tab.php:513
+#: includes/views/admin_options_settings.php:156
+msgid "Verification Email Resend Limit"
+msgstr ""
+
+#: includes/class-wc-customer-email-verification-admin.php:777
 msgid "Verification email successfully sent."
 msgstr ""
 
 #: includes/views/cev_admin_endpoint_popup_template.php:53
-#: includes/views/cev_signup_popup.php:77
+#: includes/views/cev_signup_popup.php:74
 #: includes/views/front/preview_cev_popup_page.php:66
 msgid "Verification icon"
 msgstr ""
@@ -243,12 +553,12 @@ msgstr ""
 msgid "Verify code"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:847
+#: includes/class-wc-customer-email-verification-admin.php:850
 msgid "Verify email manually"
 msgstr ""
 
 #: includes/views/cev_admin_endpoint_popup_template.php:11
-#: includes/views/cev_signup_popup.php:24
+#: includes/views/cev_signup_popup.php:23
 #: includes/views/front/preview_cev_popup_page.php:15
 msgid "Verify it's you."
 msgstr ""
@@ -257,13 +567,16 @@ msgstr ""
 msgid "Verify its you."
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:946
+#: includes/class-wc-customer-email-verification-admin.php:949
 msgid "Verify users email"
 msgstr ""
 
-#. %s: Customer email address
+#: includes/views/cev_pro_sidebar.php:41
+msgid "View Documentation →"
+msgstr ""
+
 #: includes/views/cev_admin_endpoint_popup_template.php:65
-#: includes/views/cev_signup_popup.php:89
+#: includes/views/cev_signup_popup.php:24
 #: includes/customizer/verification-widget-message.php:105
 #: includes/views/front/preview_cev_popup_page.php:76
 msgid ""
@@ -275,10 +588,16 @@ msgstr ""
 msgid "Widget background Color"
 msgstr ""
 
-#: includes/class-wc-customer-email-verification-admin.php:513
-#: includes/class-wc-customer-email-verification-admin.php:515
-#: includes/class-wc-customer-email-verification-admin.php:580
-#: includes/class-wc-customer-email-verification-admin.php:582
+#: includes/views/cev_addons_tab.php:531
+msgid "WooCommerce Store API Checkout"
+msgstr ""
+
+#: includes/class-wc-customer-email-verification-admin.php:516
+#: includes/class-wc-customer-email-verification-admin.php:518
+#: includes/class-wc-customer-email-verification-admin.php:583
+#: includes/class-wc-customer-email-verification-admin.php:585
+#: includes/views/admin_options_settings.php:195
+#: includes/views/admin_options_settings.php:195
 msgid "Your email is verified!"
 msgstr ""
 

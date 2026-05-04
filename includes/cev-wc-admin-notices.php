@@ -37,11 +37,8 @@ class WC_CEV_Admin_Notices_Under_WC_Admin {
 	* init from parent mail class
 	*/
 	public function init() {
+		add_action( 'admin_notices', array( $this, 'admin_notice_pro_update' ) );
 		
-	// Display an admin notice for Pro version update.
-		if ( is_plugin_active( 'woocommerce-subscriptions/woocommerce-subscriptions.php' ) ) {
-			add_action( 'admin_notices', array( $this, 'admin_notice_pro_update' ) );
-		}
 		// Handle dismiss action for the Pro version update notice.
 		add_action('admin_init', array( $this, 'cev_pro_notice_ignore' ) );
 
@@ -53,7 +50,7 @@ class WC_CEV_Admin_Notices_Under_WC_Admin {
 	public function admin_notice_pro_update() { 		
 		
 		// Check if the notice has been dismissed before, and if so, do not display it.
-		if ( get_option('wc_introducing_analytics_for_wooCommerce_subscriptions_ignore') ) {
+		if ( get_option('wc_cev_pro_ignore_notice_2.6.8') ) {
 			return;
 		}
 		
@@ -64,7 +61,7 @@ class WC_CEV_Admin_Notices_Under_WC_Admin {
 		}
 		
 		// Generate the dismissable URL with a query parameter to ignore the notice.
-		$dismissable_url = esc_url( add_query_arg( 'wc-introducing-analytics-for-wooCommerce-subscriptions-ignore-notice', 'true' ) );
+		$dismissable_url = esc_url( add_query_arg( 'wc-cev-pro-ignore-notice-2.6.8', 'true' ) );
 		?>
 		
 		<style>		
@@ -99,22 +96,23 @@ class WC_CEV_Admin_Notices_Under_WC_Admin {
 		// Display the notice only if the Pro version of the plugin is not active.
 		if ( !class_exists( 'customer_email_verification_pro' ) ) { 
 			?>
-			<div class="notice updated notice-success cev-dismissable-notice">
+			<div class="notice updated notice-success cev-dismissable-notice is-dismissible">
 				<!-- Dismiss button -->
 				<a href="<?php echo esc_url( $dismissable_url ); ?>" class="notice-dismiss">
 					<span class="screen-reader-text">Dismiss this notice.</span>
 				</a>
 				
 				<!-- Notice content -->
-				<h3 style="margin-top: 10px; color:#3b64d3;font-size:16px">🚀 Introducing Analytics for WooCommerce Subscriptions</h3>
-				<p>Get powerful insights with <a href="https://woocommerce.com/products/analytics-for-woocommerce-subscriptions/" target="_blank">Analytics for WooCommerce Subscriptions</a> — the all-in-one dashboard to track signups, renewals, cancellations, and recurring revenue.</p>
-				<p>Discover which products and customers drive the most value, reduce churn, and grow your subscription income with data-driven decisions.</p>
+				<h3 style="margin-top: 10px; color:#3b64d3;font-size:16px">✉️ Upgrade to Customer Email Verification PRO – Secure Every Step of the Customer Journey!</h3>
+				<p>Get advanced verification features to protect your store from spam, fake signups, and fraudulent orders:</p>
+				<p>✅ Verify emails during signup and checkout<br>✅ OTP-based login authentication for secure access<br>✅ Customizable verification popup & emails<br>✅ Block fake registrations and unauthorized activity<br></p>
+				<p>🎁 Special Offer: Get 20% OFF with coupon code CEVPRO20 – limited time only!</p>
 				<!-- Upgrade button -->
 				<a class="button-primary btn_pro_notice" target="_blank" 
-					href="https://woocommerce.com/products/analytics-for-woocommerce-subscriptions/" style="background:#3b64d3;font-size:14px; border:1px solid #3b64d3; margin-bottom:10px; color:#fff;">👉 Learn More on WooCommerce</a>
+					href="https://www.zorem.com/product/customer-email-verification/" style="background:#3b64d3;font-size:14px; border:1px solid #3b64d3; margin-bottom:10px; color:#fff;">👉 Upgrade to CEV PRO Now</a>
 				
 				<!-- Dismiss button -->
-				<a class="button-primary ast_notice_btn" href="<?php esc_html_e( $dismissable_url ); ?>" style="background:#3b64d3;font-size:14px; border:1px solid #3b64d3; margin-bottom:10px;" >Dismiss</a>
+				<a class="button-primary ast_notice_btn" href="<?php echo esc_url( $dismissable_url ); ?>" style="background:#3b64d3;font-size:14px; border:1px solid #3b64d3; margin-bottom:10px;" >Dismiss</a>
 			</div>
 		<?php
 		}
@@ -125,8 +123,20 @@ class WC_CEV_Admin_Notices_Under_WC_Admin {
 	* This prevents the notice from being displayed again.
 	*/
 	public function cev_pro_notice_ignore() {
-		if ( isset( $_GET['wc-introducing-analytics-for-wooCommerce-subscriptions-ignore-notice'] ) ) {
-			update_option( 'wc_introducing_analytics_for_wooCommerce_subscriptions_ignore', 'true' );
+		// WordPress converts dots to underscores in query parameter names
+		// Check for both versions to handle the conversion
+		$dismissed = false;
+		if ( isset( $_GET['wc-cev-pro-ignore-notice-2.6.8'] ) ) {
+			$dismissed = true;
+		} elseif ( isset( $_GET['wc-cev-pro-ignore-notice-2_6_8'] ) ) {
+			$dismissed = true;
+		}
+		
+		if ( $dismissed ) {
+			update_option( 'wc_cev_pro_ignore_notice_2.6.8', 'true' );
+			// Redirect to clean up the URL
+			wp_safe_redirect( remove_query_arg( array( 'wc-cev-pro-ignore-notice-2.6.8', 'wc-cev-pro-ignore-notice-2_6_8' ) ) );
+			exit;
 		}
 	}
 }

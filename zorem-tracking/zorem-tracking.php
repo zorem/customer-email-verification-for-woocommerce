@@ -23,6 +23,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 		public $menu_slug;
 		public $plugin_id;
 		public $plugin_slug_with_hyphens;
+		public $option_prefix;
 		/**
 		 * Initialize the main plugin function
 		*/
@@ -82,9 +83,6 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 		}
 		public function enqueue_plugin_styles() {
 			// Enqueue your CSS file
-			$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
-			wp_register_script( 'wc-jquery-blockui', WC()->plugin_url() . '/assets/js/jquery-blockui/jquery.blockUI' . $suffix . '.js', array( 'jquery' ), time(), true );
-			wp_enqueue_script( 'wc-jquery-blockui' );
 			wp_enqueue_style('plugin-css', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), time());
 			wp_enqueue_script('plugin-js', plugin_dir_url(__FILE__) . 'assets/js/main.js', array(), time());
 			 
@@ -94,9 +92,8 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			
 		}
 		public function load_admin_page() {
-			
+		
 			if (isset($_GET['page']) && $_GET['page'] === $this->menu_slug) {
-				
 				if (!get_option($this->plugin_slug_with_hyphens . '_usage_data_selector')) {
 					
 					$this->usage_data_signup_box();
@@ -110,37 +107,41 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 		}
 	
 		public function ast_activate_usage_data_fun() {
-			
-			if ( ! current_user_can( 'manage_woocommerce' ) ) {
-				exit( 'You are not allowed' );
-			}
-			
 			check_ajax_referer( $this->plugin_slug_with_hyphens . '_usage_data_form', $this->plugin_slug_with_hyphens . '_usage_data_form_nonce' );
-			
+
+			// Read before saving so we can detect a first-time opt-in.
+			$was_already_opted_in = (bool) get_option( $this->plugin_slug_with_hyphens . '_optin_confirmation_sent', false );
+
 			if ( isset( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] ) && 0 == $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] && isset( $_POST[ 	$this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) && 0 == $_POST[ $this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) {
 				update_option( $this->plugin_slug_with_hyphens . '_usage_data_selector', true );
 				die();
 			}
-		
-			if ( isset( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] ) ) {						
+
+			if ( isset( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] ) ) {
 				update_option( $this->plugin_slug_with_hyphens . '_optin_email_notification', wc_clean( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] ) );
 			}
-		
-			if ( isset( $_POST[ $this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) ) {						
-				update_option( $this->plugin_slug_with_hyphens . '_enable_usage_data', wc_clean( $_POST[ $this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) );			
+
+			if ( isset( $_POST[ $this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) ) {
+				update_option( $this->plugin_slug_with_hyphens . '_enable_usage_data', wc_clean( $_POST[ $this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) );
 			}
-		
+
 			$this->set_unset_usage_data_cron();
-		
-			update_option( $this->plugin_slug_with_hyphens . '_usage_data_selector', true );		
+
+			update_option( $this->plugin_slug_with_hyphens . '_usage_data_selector', true );
+
+			// Send one-time opt-in confirmation email.
+			$new_optin = isset( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] )
+				? (int) wc_clean( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] )
+				: 0;
+
+
+			if ( 1 === $new_optin && ! $was_already_opted_in ) {
+				$this->send_optin_confirmation_email();
+				update_option( $this->plugin_slug_with_hyphens . '_optin_confirmation_sent', true );
+			}
 		}
 	
 		public function ast_skip_usage_data_fun() {
-		
-			if ( ! current_user_can( 'manage_woocommerce' ) ) {
-				exit( 'You are not allowed' );
-			}
-		
 			check_ajax_referer( $this->plugin_slug_with_hyphens . '_usage_skip_form', $this->plugin_slug_with_hyphens . '_usage_skip_form_nonce' );
 		
 			update_option( $this->plugin_slug_with_hyphens . '_usage_data_selector', true );
@@ -169,7 +170,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			
 			$ast_enable_usage_data = get_option( $this->plugin_slug_with_hyphens . '_enable_usage_data', 0 );
 			$ast_optin_email_notification = get_option( $this->plugin_slug_with_hyphens . '_optin_email_notification', 0 );
-			
+		
 			if ( 0 == $ast_enable_usage_data && 0 == $ast_optin_email_notification ) {
 				return;
 			}
@@ -178,7 +179,10 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			update_option( $this->plugin_slug_with_hyphens . '_usage_tracker_last_send', time() );
 		
 			$params = $this->get_tracking_data();
-			
+			// $content = print_r($params, true);
+			// $logger = wc_get_logger();
+			// $context = array( 'source' => 'usage_tracker_last_send' );
+			// $logger->info( "usage_tracker_last_send \n" . $content . "\n", $context );
 			wp_safe_remote_post(
 				self::$api_url,
 				array(
@@ -239,6 +243,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 				$data['country'] = WC()->countries->get_base_country();
 
 				$data['order'] = $this->get_order_revenue();
+				$data['settings'] = apply_filters( 'get_settings_data', $this->option_prefix);
 				// $data['net_revenue_twelve'] = $order_revenue_data['net_revenue_twelve'];
 				// $data['orders_count_twelve'] = $order_revenue_data['orders_count_twelve'];
 				// $data['avg_order_value_twelve'] = $order_revenue_data['avg_order_value_twelve'];
@@ -247,7 +252,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 				// $data['net_revenue_three'] = $order_revenue_data['net_revenue_three'];
 				
 			}
-		
+			$data = apply_filters( 'zorem_tracking_data', $data);
 			return $data;
 		}
 	
@@ -430,7 +435,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			$data['net_revenue_three'] = $three_month_data->totals->net_revenue;
 			$data['avg_order_value_three'] = $three_month_data->totals->avg_order_value;
 			$data['orders_count_three'] = $three_month_data->totals->orders_count;
-		
+
 			$twelve_months_ago = gmdate('Y-m-d H:i:s', strtotime('-12 months'));
 			$args1 = array(
 				'before'    => $current_date,
@@ -441,8 +446,32 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			$data['net_revenue_twelve'] = $twelve_month_data->totals->net_revenue;
 			$data['avg_order_value_twelve'] = $twelve_month_data->totals->avg_order_value;
 			$data['orders_count_twelve'] = $twelve_month_data->totals->orders_count;
-		
+
 			return $data;
+		}
+
+		/**
+		 * Send a one-time opt-in confirmation email to the site admin.
+		 */
+		private function send_optin_confirmation_email() {
+			$response = wp_safe_remote_post(
+				'https://tracking.zorem.com/wp-json/zorem-usage/v1/send-optin-email',
+				array(
+					'method'   => 'POST',
+					'timeout'  => 15,
+					'blocking' => true,
+					'headers'  => array(
+						'Content-Type' => 'application/json',
+						'User-Agent'   => 'zoremTracker/' . md5( esc_url_raw( home_url( '/' ) ) ) . ';',
+					),
+					'body' => wp_json_encode( array(
+						'to'              => get_option( 'admin_email' ),
+						'plugin_name'     => $this->plugin_name,
+						'site_url'        => home_url(),
+						'logo_url'        => plugin_dir_url( __FILE__ ) . 'assets/images/logo-v1.png',
+					) ),
+				)
+			);
 		}
 	}
 }

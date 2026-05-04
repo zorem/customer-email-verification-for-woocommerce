@@ -220,7 +220,10 @@ class WC_Customer_Email_Verification_Admin {
 				<span class="breadcums_page_heading"><?php echo esc_html( $breadcrumb_text ); ?></span>
 			</h1>	
 
-			<img src="<?php echo esc_url( woo_customer_email_verification()->plugin_dir_url() ); ?>assets/images/zorem-logo.png?<?php echo esc_attr( time() ); ?>" class="zorem_logo_header" alt="ZOREM">		
+			<div class="zorem-layout-cev__header-right">
+				<button class="btn_upgrade button-primary"><a href="https://www.zorem.com/product/customer-email-verification/" target="_blank"><?php esc_html_e( 'UPGRADE TO PRO', 'customer-email-verification' ); ?></a></button>
+				<img src="<?php echo esc_url( woo_customer_email_verification()->plugin_dir_url() ); ?>assets/images/zorem-logo.png?<?php echo esc_attr( time() ); ?>" class="zorem_logo_header" alt="ZOREM">
+			</div>
 		</div>
 		<?php if ('no' != $ignore) { ?>
 		<div class="cev_pro_banner" id="dataToDisplay">
@@ -232,7 +235,7 @@ class WC_Customer_Email_Verification_Admin {
 						</p>
 						<p>🎉 <b>Get 20% Off*!</b> for new customers only. Use code <b>CEVPRO20</b> at checkout.</p>
 						<div class="btn_box">
-							<button class="btn_upgrade"><a href="https://www.zorem.com/product/customer-email-verification/" target="_blank">Upgrade Now</a></button>
+							<button class="btn_upgrade button-primary"><a href="https://www.zorem.com/product/customer-email-verification/" target="_blank">Upgrade Now</a></button>
 							<!-- <button class="btn_dismiss" id="btn_dismiss"><a href="<?php //esc_html_e( $dismissable_url ); ?>">Dismiss for 30 days</a></button> -->
 						</div>
 					</div>
@@ -311,7 +314,7 @@ class WC_Customer_Email_Verification_Admin {
 			),
 						
 			'Add_tab' => array(					
-				'title'		=> __( 'Go Pro', 'customer-email-verification-for-woocommerce' ),
+				'title'		=> __( 'Go Pro', 'customer-email-verification-for-woocommerce' ) . ' ✨',
 				'show'      => true,
 				'class'     => 'cev_tab_label',
 				'data-tab'  => 'add-ons',

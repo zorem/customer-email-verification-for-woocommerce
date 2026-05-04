@@ -58,7 +58,6 @@ class WC_Customer_Email_Verification_Email {
 		add_filter( 'wcalr_register_user_successful', array( $this, 'wcalr_register_user_successful_fun' ) );	
 		add_action( 'wp', array( $this, 'show_cev_notification_message_after_register' ) );
 		add_action( 'wp', array( $this, 'cev_resend_verification_email' ) );		
-		add_action( 'wp', array( $this, 'check_user_and_redirect_to_endpoint' ) );						
 		add_action( 'wp_ajax_nopriv_cev_verify_user_email_with_pin', array( $this, 'cev_verify_user_email_with_pin_fun') );
 		add_action( 'wp_ajax_cev_verify_user_email_with_pin', array( $this, 'cev_verify_user_email_with_pin_fun') );
 		add_action( 'user_register', array( $this, 'cev_verify_user_email_on_registration_checkout'), 10, 1 );		
@@ -281,63 +280,6 @@ class WC_Customer_Email_Verification_Email {
 		}
 	}
 
-	public function check_user_and_redirect_to_endpoint() {
-				
-		if ( !is_account_page() ) {
-			return;
-		}
-		
-		if ( is_user_logged_in() ) {
-			
-			$user = get_user_by( 'id', get_current_user_id() );
-			
-			$user_id = $user->ID;
-			
-			$first_login = WC()->session->get( 'first_login', 0 );
-			
-			if ( 1 == $first_login ) {
-				return;
-			}
-						
-			if ( !$user ) {
-				return;
-			}
-			
-			$cev_enable_email_verification = get_option( 'cev_enable_email_verification', 1 );
-			$cev_redirect_after_successfull_verification = get_option( 'cev_redirect_after_successfull_verification', $this->my_account );
-			$redirect_url = wc_get_account_endpoint_url( 'email-verification' );
-			$redirect_url_my_account = wc_get_account_endpoint_url( 'dashboard' );
-			$logout_url = wc_get_account_endpoint_url( 'customer-logout' );				
-			$logout_url = strtok( $logout_url, '?' );
-			$logout_url = rtrim( strtok( $logout_url, '?' ), '/' );
-			$email_verification_url = rtrim( wc_get_account_endpoint_url( 'email-verification' ), '/' );
-			global $wp;			 
-			$current_slug = add_query_arg( array(), $wp->request );				
-			
-			if ( home_url( $wp->request ) == $logout_url ) {
-				return;
-			}
-			
-			if ( !woo_customer_email_verification()->is_admin_user( $user_id ) && !woo_customer_email_verification()->is_verification_skip_for_user( $user_id ) && 1 == $cev_enable_email_verification ) {
-				$verified = get_user_meta( get_current_user_id(), 'customer_email_verified', true );					
-				$cev_email_verification_pin = get_user_meta( get_current_user_id(), 'cev_email_verification_pin', true );
-				if ( !empty( $cev_email_verification_pin ) ) {
-					if ( 'true' !== $verified ) {					
-						if ( home_url( $wp->request ) != $email_verification_url ) {
-							wp_safe_redirect( $redirect_url );
-							exit;	
-						}
-					} elseif ( 'true' == $verified ) {
-						if ( home_url( $wp->request ) == $email_verification_url ) {
-							wp_safe_redirect( $redirect_url_my_account );
-							exit;	
-						}	
-					}					
-				}
-			}
-		} 
-	}
-		
 	public function cev_verify_user_email_with_pin_fun() {
 		
 		check_admin_referer( 'cev_verify_user_email_with_pin', 'cev_verify_user_email_with_pin' );

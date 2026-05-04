@@ -89,17 +89,17 @@ input.cev_tab_input:checked + label {
     margin-bottom: -3px;
     font-weight: 600;
 }
+#Add_tab + label.cev_tab_label {
+    font-weight: 700 !important;
+    color: #3b64d3 !important;
+}
 #setting_tab:checked ~ #cev_content_settings,#tool_tab:checked ~ #cev_content_tools,#Add_tab:checked ~ #cev_content_addons, #user_tab:checked ~ #cev_content_user {
 	display:block;
-}
-
-.accordion_container {
-    margin: 20px;
 }
 .cev_tab_section .accordion {
     background: #fafafa;
     border: 1px solid #e0e0e0;
-    border-radius: 3px;
+    border-radius: 8px 8px 0 0;
     margin-top: 10px;
     cursor: pointer;
     display: flex;
@@ -110,6 +110,9 @@ input.cev_tab_input:checked + label {
 }
 .cev_tab_section .tgl-flat-cev + .tgl-btn.tgl-panel-label {
     pointer-events: all;
+}
+.cev-pro-locked-field .tgl-flat-cev + .tgl-btn.tgl-panel-label {
+    pointer-events: none !important;
 }
 .cev_tab_section .accordion.heading label {
     font-weight: 600;
@@ -165,7 +168,7 @@ input.cev_tab_input:checked + label {
     padding: 15px;
     border: 1px solid #e0e0e0;
     border-top: 0;
-    border-radius: 3px;
+    border-radius: 0 0 8px 8px;
     background: #fff;
 }
 
@@ -439,6 +442,51 @@ tr.border_class:last-child{
 }
 .rtl .tgl + .tgl-btn:after {
     right: 0;
+}
+/* PRO Toggle - Separate CSS for PRO version toggles */
+.cev-pro-toggle + .tgl-btn {
+    background: #E5E7EB !important;
+    border: 1px solid #D1D5DB !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    opacity: 1 !important;
+}
+.cev-pro-toggle + .tgl-btn:after {
+    background: #9CA3AF !important;
+    left: 2px !important;
+}
+.cev-pro-toggle:checked + .tgl-btn {
+    background: #E5E7EB !important;
+    border: 1px solid #D1D5DB !important;
+}
+.cev-pro-toggle:checked + .tgl-btn:after {
+    background: #9CA3AF !important;
+    left: 2px !important;
+}
+.rtl .cev-pro-toggle + .tgl-btn:after {
+    right: 2px !important;
+    left: auto !important;
+}
+.rtl .cev-pro-toggle:checked + .tgl-btn:after {
+    right: 2px !important;
+    left: auto !important;
+}
+/* Disabled toggle in locked fields */
+.cev-pro-locked-field .tgl-flat-cev:disabled + .tgl-btn,
+.cev-pro-locked-field .tgl-flat-cev[disabled] + .tgl-btn,
+.cev-pro-locked-field .tgl-flat-cev + .tgl-btn {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+.cev-pro-locked-field .tgl-flat-cev:disabled:checked + .tgl-btn:after,
+.cev-pro-locked-field .tgl-flat-cev[disabled]:checked + .tgl-btn:after {
+    background: #9CA3AF;
+    opacity: 0.7;
+}
+.cev-pro-locked-field .tgl-flat-cev:disabled + .tgl-btn:after,
+.cev-pro-locked-field .tgl-flat-cev[disabled] + .tgl-btn:after {
+    background: #9CA3AF;
 }
 select#cev_redirect_after_successfull_verification{
     width: 140px;
@@ -1008,9 +1056,18 @@ a.button-primary.cev-btn-large {
 	align-items: center;
 	position: relative;
 }
+.zorem-layout-cev__header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: 20px;
+}
 img.zorem_logo_header{
-    margin: 0 12px;
+    margin: 0;
     width: 100px;
+}
+.zorem-layout-cev__header button.btn_upgrade.button-primary {
+    margin: 0;
 }
 .zorem-layout-cev__header .page_heading {
     font-size: 14px;
@@ -1289,7 +1346,8 @@ a.menu_cev_link{
     display: block;
     padding: 20px;
     background-color: #fff;
-    box-shadow: 0 0 5px 0 #e0e0e0;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
     position: relative;
 
 }
@@ -1301,25 +1359,29 @@ a.menu_cev_link{
 }
 .box_main .box_left h3{
     color: #3b64d3;
-    font-weight: 600;
-    font-size: 18px;
+    font-weight: 700;
+    font-size: 22px;
     line-height: 27px;
     margin: 0;
 }
 .box_main .box_left p {
     color: #1c1c1c;
-    font-size: 14px;
+    font-size: 13px;
 }
-.btn_upgrade {
+button.btn_upgrade.button-primary {
     background: #3b64d3;
-    border: 1px solid #3b64d3;
-    padding: 9px 18px;
-    border: none;
-    border-radius: 5px;
+    text-shadow: none;
+    border-color: #3b64d3;
+    box-shadow: none;
     font-size: 14px;
-    color: #fafafa;
-    font-weight: 600;
-    cursor: pointer;
+    line-height: 35px;
+    padding: 0 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+button.btn_upgrade.button-primary:hover {
+    background: #3b64d3;
+    border-color: #3b64d3;
 }
 .btn_upgrade a{
     color: #fff;
@@ -1563,4 +1625,322 @@ table#userLogTable .hover-row td {
 
 #tiptip_holder.tip_top #tiptip_arrow_inner{
     border-top-color:#3b64d3 !important;
+}
+
+/* =====================================================
+   PRO Layout Matching Styles (accordion sections)
+   ===================================================== */
+
+.settings_accordion .accordion_set {
+    margin-bottom: 0;
+}
+
+.settings_accordion .accordion_set:first-child .accordion.heading {
+    margin-top: 0;
+}
+
+.accordion-label.second_label {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 38px;
+    color: #3c4758;
+    padding: 15px;
+    width: 100%;
+}
+
+li.toogel {
+    display: flex;
+    align-items: center;
+}
+
+li.toogel .settings_label {
+    margin-bottom: 0 !important;
+}
+
+li.toogel .accordion-toggle {
+    padding: 0;
+    margin-right: 10px;
+}
+
+div.cev_separator {
+    width: 100%;
+    height: 1px;
+    background: #f5f5f5;
+}
+
+li.cev-skip-bottom-padding {
+    margin-bottom: 5px !important;
+}
+
+li.enable_email_auth_for_login_time select {
+    height: 30px;
+}
+
+/* =====================================================
+   Two-Column Layout: Settings + Sidebar
+   ===================================================== */
+
+.cev-settings-columns {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 20px;
+}
+
+.cev-settings-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.cev-settings-sidebar {
+    width: 435px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 52px;
+    /* margin-top: 20px; */
+}
+
+@media (max-width: 1200px) {
+    .cev-settings-columns {
+        flex-direction: column;
+    }
+    .cev-settings-sidebar {
+        width: 100%;
+        position: static;
+    }
+}
+
+/* =====================================================
+   Sidebar Cards
+   ===================================================== */
+
+.cev-sidebar-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 24px 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* ── Upgrade Card ── */
+.cev-sidebar-upgrade-icon {
+    margin-bottom: 12px;
+}
+.cev-sidebar-upgrade-icon .dashicons {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: #3b64d3;
+}
+.cev-sidebar-upgrade h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #3b64d3;
+    margin: 0 0 10px;
+    line-height: 1.4;
+}
+.cev-sidebar-upgrade p {
+    font-size: 16px;
+    color: #3c4758;
+    margin: 0 0 14px;
+    line-height: 1.5;
+}
+.cev-sidebar-features {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
+    text-align: left;
+}
+.cev-sidebar-features li {
+    font-size: 13px;
+    color: #4B5563;
+    padding: 4px 0;
+    line-height: 1.5;
+}
+.cev-sidebar-features li::before {
+    content: "✓";
+    color: #3b64d3;
+    font-weight: 700;
+    margin-right: 8px;
+}
+a.cev-sidebar-upgrade-btn.button-primary {
+    background: #3b64d3;
+    text-shadow: none;
+    border-color: #3b64d3;
+    box-shadow: none;
+    font-size: 14px;
+    line-height: 35px;
+    padding: 0 10px;
+    border-radius: 3px;
+    width: 100%;
+}
+a.cev-sidebar-upgrade-btn.button-primary:hover {
+    background: #3b64d3;
+    border-color: #3b64d3;
+    color: #fff !important;
+}
+.cev-sidebar-trusted {
+    font-size: 11px;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+    margin: 12px 0 0;
+    font-weight: 600;
+}
+
+/* ── Help / Documentation Card ── */
+.cev-sidebar-help {
+    text-align: left;
+}
+.cev-sidebar-help-icon {
+    margin-bottom: 8px;
+}
+.cev-sidebar-help-icon .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: #3b64d3;
+    background: #eef2ff;
+    border-radius: 50%;
+    padding: 8px;
+    box-sizing: content-box;
+}
+.cev-sidebar-help h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 6px;
+}
+.cev-sidebar-help p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+.cev-sidebar-doc-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: #3b64d3 !important;
+    text-decoration: none;
+}
+.cev-sidebar-doc-link:hover {
+    text-decoration: underline;
+}
+
+/* =====================================================
+   PRO Badge — #3b64d3 with white text
+   ===================================================== */
+
+.cev-pro-badge {
+    background: #3b64d3;
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+}
+
+/* Lock icon — dashicons \f160 */
+.cev-pro-lock-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    vertical-align: middle;
+    opacity: 0.5;
+}
+.cev-pro-lock-icon::before {
+    content: "\f160";
+    font-family: dashicons;
+    font-size: 18px;
+    color: #6B7280;
+    line-height: 1;
+}
+
+/* Right-aligned container for badge + lock */
+.cev-pro-tag {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    flex-shrink: 0;
+    gap: 2px;
+}
+
+/* =====================================================
+   PRO Locked Field — readable, muted, not clickable
+   ===================================================== */
+
+.cev-pro-locked-field {
+    position: relative;
+    cursor: not-allowed !important;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.cev-pro-locked-field,
+.cev-pro-locked-field .settings_label,
+.cev-pro-locked-field label,
+.cev-pro-locked-field .label,
+.cev-pro-locked-field p {
+    color: #9CA3AF !important;
+}
+
+.cev-pro-locked-field select,
+.cev-pro-locked-field textarea,
+.cev-pro-locked-field input[type="text"],
+.cev-pro-locked-field input[type="checkbox"],
+.cev-pro-locked-field input[type="checkbox"].tgl,
+.cev-pro-locked-field input[type="checkbox"].tgl-flat-cev,
+.cev-pro-locked-field input[type="radio"],
+.cev-pro-locked-field button,
+.cev-pro-locked-field a {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+.cev-pro-locked-field * {
+    cursor: not-allowed !important;
+}
+
+/* Keep badge + lock crisp */
+.cev-pro-locked-field .cev-pro-tag,
+.cev-pro-locked-field .cev-pro-badge,
+.cev-pro-locked-field .cev-pro-lock-icon {
+    opacity: 1 !important;
+    pointer-events: none;
+}
+.cev-pro-locked-field .cev-pro-badge {
+    color: #fff !important;
+}
+.cev-pro-locked-field .cev-pro-lock-icon::before {
+    color: #6B7280 !important;
+}
+
+.cev-pro-no-click {
+    pointer-events: none !important;
+    cursor: not-allowed !important;
+}
+
+/* Toggle rows that are locked */
+li.toogel.cev-pro-locked-field {
+    display: flex;
+    align-items: center;
+}
+li.toogel.cev-pro-locked-field .accordion-toggle {
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+li.toogel.cev-pro-locked-field .cev-pro-tag {
+    margin-left: auto;
+}
+
+/* Accordion heading badge */
+.accordion-label .cev-pro-badge {
+    font-size: 10px;
+    padding: 1px 8px;
+    margin-left: 10px;
+    vertical-align: middle;
 }
