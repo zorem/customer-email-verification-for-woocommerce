@@ -47,21 +47,25 @@ class WC_CEV_Admin_Notices_Under_WC_Admin {
 	/*
 	* Display an admin notice on plugin install or update
 	*/
-	public function admin_notice_pro_update() { 		
-		
-		// Check if the notice has been dismissed before, and if so, do not display it.
-		if ( get_option('wc_cev_pro_ignore_notice_2.6.8') ) {
+	public function admin_notice_pro_update() {
+
+		$version    = woo_customer_email_verification()->version;
+		$option_key = 'wc_cev_pro_ignore_notice_' . $version;
+		$query_arg  = 'wc-cev-pro-ignore-notice-' . $version;
+
+		// Check if the notice has been dismissed for the current plugin version.
+		if ( get_option( $option_key ) ) {
 			return;
 		}
-		
+
 		// Check if we are on the "customer-email-verification-for-woocommerce" settings page.
 		// If so, do not display the notice there.
 		if ( isset( $_GET['page'] ) && 'customer-email-verification-for-woocommerce' === $_GET['page'] ) {
 			return;
 		}
-		
+
 		// Generate the dismissable URL with a query parameter to ignore the notice.
-		$dismissable_url = esc_url( add_query_arg( 'wc-cev-pro-ignore-notice-2.6.8', 'true' ) );
+		$dismissable_url = esc_url( add_query_arg( $query_arg, 'true' ) );
 		?>
 		
 		<style>		
@@ -123,19 +127,16 @@ class WC_CEV_Admin_Notices_Under_WC_Admin {
 	* This prevents the notice from being displayed again.
 	*/
 	public function cev_pro_notice_ignore() {
-		// WordPress converts dots to underscores in query parameter names
-		// Check for both versions to handle the conversion
-		$dismissed = false;
-		if ( isset( $_GET['wc-cev-pro-ignore-notice-2.6.8'] ) ) {
-			$dismissed = true;
-		} elseif ( isset( $_GET['wc-cev-pro-ignore-notice-2_6_8'] ) ) {
-			$dismissed = true;
-		}
-		
-		if ( $dismissed ) {
-			update_option( 'wc_cev_pro_ignore_notice_2.6.8', 'true' );
-			// Redirect to clean up the URL
-			wp_safe_redirect( remove_query_arg( array( 'wc-cev-pro-ignore-notice-2.6.8', 'wc-cev-pro-ignore-notice-2_6_8' ) ) );
+		$version       = woo_customer_email_verification()->version;
+		$option_key    = 'wc_cev_pro_ignore_notice_' . $version;
+		$query_arg     = 'wc-cev-pro-ignore-notice-' . $version;
+		$query_arg_alt = str_replace( '.', '_', $query_arg );
+
+		// WordPress converts dots to underscores in query parameter names,
+		// so check for both forms.
+		if ( isset( $_GET[ $query_arg ] ) || isset( $_GET[ $query_arg_alt ] ) ) {
+			update_option( $option_key, 'true' );
+			wp_safe_redirect( remove_query_arg( array( $query_arg, $query_arg_alt ) ) );
 			exit;
 		}
 	}
