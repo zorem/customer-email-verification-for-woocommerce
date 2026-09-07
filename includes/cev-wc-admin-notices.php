@@ -68,55 +68,92 @@ class WC_CEV_Admin_Notices_Under_WC_Admin {
 		$dismissable_url = esc_url( add_query_arg( $query_arg, 'true' ) );
 		?>
 		
-		<style>		
-		/* Styling for the dismissable admin notice */
-		.wp-core-ui .notice.cev-dismissable-notice {
-			position: relative;
+		<style>
+		.cev-dismissable-notice {
+			border-left-color: #3b64d3 !important;
 			padding-right: 38px;
-			border-left-color: #3b64d3;
 		}
-		
-		/* Styling for the dismiss button */
-		.wp-core-ui .notice.cev-dismissable-notice a.notice-dismiss {
-			padding: 9px;
-			text-decoration: none;
-		} 
-		
-		/* Styling for the Pro upgrade button */
-		.wp-core-ui .button-primary.btn_pro_notice {
-			background: transparent;
-			color: #395da4;
-			border-color: #395da4;
-			text-transform: uppercase;
-			padding: 0 11px;
-			font-size: 12px;
-			height: 30px;
-			line-height: 28px;
-			margin: 5px 0 15px;
+		.cev-dismissable-notice h3.cev-notice-title {
+			margin-top: 10px;
+			margin-bottom: 4px;
+			font-size: 15px;
+			font-weight: 700;
+			color: #3b64d3;
+		}
+		.cev-notice-actions {
+			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin: 12px 0 14px;
+		}
+		.cev-notice-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 7px 16px !important;
+			height: auto !important;
+			line-height: 1.4 !important;
+			font-size: 13px !important;
+			font-weight: 600 !important;
+			border-radius: 6px !important;
+			text-decoration: none !important;
+			cursor: pointer;
+			transition: background .15s, border-color .15s, box-shadow .15s;
+			box-shadow: none !important;
+			outline-offset: 2px;
+		}
+		.cev-notice-btn-upgrade {
+			background: #3b64d3 !important;
+			border: 1px solid #3b64d3 !important;
+			color: #fff !important;
+		}
+		.cev-notice-btn-upgrade:hover,
+		.cev-notice-btn-upgrade:focus {
+			background: #2d50b5 !important;
+			border-color: #2d50b5 !important;
+			color: #fff !important;
+		}
+		.cev-notice-btn-dismiss {
+			background: #fff !important;
+			border: 1px solid #c5cfe8 !important;
+			color: #3b64d3 !important;
+		}
+		.cev-notice-btn-dismiss:hover,
+		.cev-notice-btn-dismiss:focus {
+			background: #eef2ff !important;
+			border-color: #3b64d3 !important;
+			color: #3b64d3 !important;
 		}
 		</style>
-		
-		<?php 
+
+		<?php
 		// Display the notice only if the Pro version of the plugin is not active.
-		if ( !class_exists( 'customer_email_verification_pro' ) ) { 
+		if ( ! class_exists( 'customer_email_verification_pro' ) ) {
 			?>
-			<div class="notice updated notice-success cev-dismissable-notice is-dismissible">
-				<!-- Dismiss button -->
+			<div class="notice notice-info cev-dismissable-notice is-dismissible">
 				<a href="<?php echo esc_url( $dismissable_url ); ?>" class="notice-dismiss">
-					<span class="screen-reader-text">Dismiss this notice.</span>
+					<span class="screen-reader-text"><?php esc_html_e( 'Dismiss this notice.', 'customer-email-verification-for-woocommerce' ); ?></span>
 				</a>
-				
-				<!-- Notice content -->
-				<h3 style="margin-top: 10px; color:#3b64d3;font-size:16px">✉️ Upgrade to Customer Email Verification PRO – Secure Every Step of the Customer Journey!</h3>
-				<p>Get advanced verification features to protect your store from spam, fake signups, and fraudulent orders:</p>
-				<p>✅ Verify emails during signup and checkout<br>✅ OTP-based login authentication for secure access<br>✅ Customizable verification popup & emails<br>✅ Block fake registrations and unauthorized activity<br></p>
-				<p>🎁 Special Offer: Get 20% OFF with coupon code CEVPRO20 – limited time only!</p>
-				<!-- Upgrade button -->
-				<a class="button-primary btn_pro_notice" target="_blank" 
-					href="https://www.zorem.com/product/customer-email-verification/" style="background:#3b64d3;font-size:14px; border:1px solid #3b64d3; margin-bottom:10px; color:#fff;">👉 Upgrade to CEV PRO Now</a>
-				
-				<!-- Dismiss button -->
-				<a class="button-primary ast_notice_btn" href="<?php echo esc_url( $dismissable_url ); ?>" style="background:#3b64d3;font-size:14px; border:1px solid #3b64d3; margin-bottom:10px;" >Dismiss</a>
+
+				<h3 class="cev-notice-title">✉️ <?php esc_html_e( 'Upgrade to Customer Email Verification PRO – Secure Every Step of the Customer Journey!', 'customer-email-verification-for-woocommerce' ); ?></h3>
+				<p><?php esc_html_e( 'Get advanced verification features to protect your store from spam, fake signups, and fraudulent orders:', 'customer-email-verification-for-woocommerce' ); ?></p>
+				<p>
+					✅ <?php esc_html_e( 'Verify emails during signup and checkout', 'customer-email-verification-for-woocommerce' ); ?><br>
+					✅ <?php esc_html_e( 'OTP-based login authentication for secure access', 'customer-email-verification-for-woocommerce' ); ?><br>
+					✅ <?php esc_html_e( 'Customizable verification popup & emails', 'customer-email-verification-for-woocommerce' ); ?><br>
+					✅ <?php esc_html_e( 'Block fake registrations and unauthorized activity', 'customer-email-verification-for-woocommerce' ); ?>
+				</p>
+				<p>🎁 <?php esc_html_e( 'Special Offer: Get 20% OFF with coupon code CEVPRO20 – limited time only!', 'customer-email-verification-for-woocommerce' ); ?></p>
+
+				<div class="cev-notice-actions">
+					<a class="cev-notice-btn cev-notice-btn-upgrade" href="https://www.zorem.com/product/customer-email-verification/" target="_blank" rel="noreferrer noopener">
+						👉 <?php esc_html_e( 'Upgrade to CEV PRO Now', 'customer-email-verification-for-woocommerce' ); ?>
+					</a>
+					<a class="cev-notice-btn cev-notice-btn-dismiss" href="<?php echo esc_url( $dismissable_url ); ?>">
+						<?php esc_html_e( 'Dismiss', 'customer-email-verification-for-woocommerce' ); ?>
+					</a>
+				</div>
 			</div>
 		<?php
 		}

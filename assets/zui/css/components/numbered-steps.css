@@ -1,0 +1,51 @@
+/* ============================================================
+   Zorem UI — Numbered steps (vertical instructions)
+   ------------------------------------------------------------
+   Vertical 1·2·3 instruction list (onboarding, 2FA setup, etc.).
+
+   Markup:
+     <ol class="zui-steps">
+       <li class="zui-steps__item">
+         <span class="zui-steps__num">1</span>
+         <span class="zui-steps__text">Install an authenticator app…</span>
+       </li>
+     </ol>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-steps {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.zui-scope .zui-steps__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.zui-scope .zui-steps__num {
+	width: 24px;
+	height: 24px;
+	flex-shrink: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	background: var(--zui-primary-50);
+	color: var(--zui-primary-600);
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.zui-scope .zui-steps__text {
+	font-size: 14px;
+	line-height: 1.55;
+	color: var(--zui-text-soft);
+}

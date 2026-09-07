@@ -77,12 +77,12 @@ class CEV_Installation {
 				$this->create_user_log_table(); 
 				update_option( 
 					'cev_verification_message', 
-					__( 'We sent a verification code. To verify your email address, please check your inbox and enter the code below.', 'customer-email-verification' ) 
+					__( 'We sent a verification code. To verify your email address, please check your inbox and enter the code below.', 'customer-email-verification-for-woocommerce' ) 
 				);
 				update_option( 'cev_verification_code_length', '1' );
 				update_option( 
 					'cev_verification_email_body', 
-					__( 'Thank you for signing up for {site_title}. To activate your account, we need to verify your email address. <p>Your verification code: <strong>{cev_user_verification_pin}</strong></p>', 'customer-email-verification' ) 
+					__( 'Thank you for signing up for {site_title}. To activate your account, we need to verify your email address. <p>Your verification code: <strong>{cev_user_verification_pin}</strong></p>', 'customer-email-verification-for-woocommerce' ) 
 				);
 				update_option( 'cev_email_for_verification', '0' );
 				

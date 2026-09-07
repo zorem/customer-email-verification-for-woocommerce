@@ -108,12 +108,10 @@ class WC_Customer_Email_Verification_Email {
 		
 		$user_role = get_userdata( $user_id );
 		
-		// $verified = get_user_meta( $user_id, 'customer_email_verified', true );
 		update_user_meta( (int) $user_id, 'customer_email_verified', 'false' );
-		$cev_enable_email_verification = get_option( 'cev_enable_email_verification', 1 );		
-		
-		
-		if ( !woo_customer_email_verification()->is_admin_user( $user_id )  && !woo_customer_email_verification()->is_verification_skip_for_user( $user_id ) && 1 == $cev_enable_email_verification && 'true' != $verified ) {
+		$cev_enable_email_verification = get_option( 'cev_enable_email_verification', 1 );
+
+		if ( ! woo_customer_email_verification()->is_admin_user( $user_id ) && ! woo_customer_email_verification()->is_verification_skip_for_user( $user_id ) && 1 == $cev_enable_email_verification ) {
 			
 			$current_user = get_user_by( 'id', $user_id );
 			$this->user_id                         = $current_user->ID;
@@ -129,12 +127,18 @@ class WC_Customer_Email_Verification_Email {
 				$secret_code = md5( $this->user_id . time() );
 				update_user_meta( $user_id, 'customer_email_verification_code', $secret_code );
 			}
-			
+
+			$expire_time = get_option( 'cev_verification_code_expiration', 'never' );
+
+			if ( empty( $expire_time ) ) {
+				$expire_time = 'never';
+			}
+
 			$verification_data = array(
-				'pin' => '', 
+				'pin' => '',
 				'startdate' => time(),
 				'enddate' => time() + ( int ) $expire_time,
-			);		
+			);
 	
 			update_user_meta( $user_id, 'cev_email_verification_pin', $verification_data );
 			$this->is_new_user_email_sent = true;
@@ -151,7 +155,7 @@ class WC_Customer_Email_Verification_Email {
 		$hyperlink   = add_query_arg( array(
 			'cusomer_email_verify' => base64_encode( $create_link ),
 		), get_the_permalink( $this->my_account ) );		
-		$link  = '<a href="' . $hyperlink . '">"Email verification link"</a>';
+		$link  = '<a href="' . $hyperlink . '">' . __( 'Email verification link', 'customer-email-verification-for-woocommerce' ) . '</a>';
 
 		return $link;
 	}
@@ -175,14 +179,14 @@ class WC_Customer_Email_Verification_Email {
 				$cev_email_link_expired = apply_filters( 'cev_email_link_expired', false, (int) $user_meta[1] );
 				
 				if ( $cev_email_link_expired ) {
-					$verification_failed_message = get_option( 'cev_verification_success_message', 'Your email verification link is expired.' );
+					$verification_failed_message = get_option( 'cev_verification_success_message', __( 'Your email verification link is expired.', 'customer-email-verification-for-woocommerce' ) );
 					wc_add_notice( $verification_failed_message, 'notice' );
 				} else {
 					WC_customer_email_verification_email_Common()->wuev_user_id = (int) $user_meta[1];
 					$allow_automatic_login = 1;
 					update_user_meta( (int) $user_meta[1], 'customer_email_verified', 'true' );
 					update_user_meta( (int) $user_meta[1], 'cev_user_resend_times', 0 );					
-					$verification_success_message = get_option( 'cev_verification_success_message', 'Your email is verified!' );
+					$verification_success_message = get_option( 'cev_verification_success_message', __( 'Your email is verified!', 'customer-email-verification-for-woocommerce' ) );
 					wc_add_notice( $verification_success_message, 'notice' );	
 					do_action('cev_new_email_enable');
 				}						
@@ -216,7 +220,7 @@ class WC_Customer_Email_Verification_Email {
 	
 	public function show_cev_notification_message_after_register() {
 		if ( isset( $_GET['cev'] ) && '' !== $_GET['cev'] ) { // WPCS: input var ok, CSRF ok.
-			$registration_message = get_option( 'cev_verification_message', 'We sent you a verification email. Check and verify your account.' );
+			$registration_message = get_option( 'cev_verification_message', __( 'We sent you a verification email. Check and verify your account.', 'customer-email-verification-for-woocommerce' ) );
 			wc_add_notice( $registration_message, 'notice' );
 		}
 		if ( isset( $_GET['cevsm'] ) && '' !== $_GET['cevsm'] ) { // WPCS: input var ok, CSRF ok.
@@ -224,7 +228,7 @@ class WC_Customer_Email_Verification_Email {
 			if ( false === WC()->session->has_session() ) {
 				WC()->session->set_customer_session_cookie( true );
 			}
-			$message = get_option('cev_resend_verification_email_message', 'You need to verify your account before login. {{cev_resend_email_link}}');
+			$message = get_option('cev_resend_verification_email_message', __( 'You need to verify your account before login. {{cev_resend_email_link}}', 'customer-email-verification-for-woocommerce' ));
 			$message = WC_customer_email_verification_email_Common()->maybe_parse_merge_tags( $message );
 			if ( false === wc_has_notice( $message, 'notice' ) ) {
 				wc_add_notice( $message, 'notice' );
@@ -248,7 +252,7 @@ class WC_Customer_Email_Verification_Email {
 			$verified = get_user_meta( $user_id, 'customer_email_verified', true );
 
 			if ( 'true' === $verified ) {				
-				$verified_message = get_option('cev_verified_user_message', 'Your email is already verified');
+				$verified_message = get_option('cev_verified_user_message', __( 'Your email is already verified', 'customer-email-verification-for-woocommerce' ));
 				wc_add_notice( $verified_message, 'notice' );
 			} else {
 				
@@ -273,7 +277,7 @@ class WC_Customer_Email_Verification_Email {
 				
 				WC_customer_email_verification_email_Common()->code_mail_sender( $current_user->user_email );
 				//$this->new_user_registration( $user_id );
-				$message = get_option('cev_resend_verification_email_message', 'A new verification link is sent. Check email. {{cev_resend_email_link}}');
+				$message = get_option('cev_resend_verification_email_message', __( 'A new verification link is sent. Check email. {{cev_resend_email_link}}', 'customer-email-verification-for-woocommerce' ));
 				$message = WC_customer_email_verification_email_Common()->maybe_parse_merge_tags( $message );
 				wc_add_notice( $message, 'notice' );
 			}
@@ -287,7 +291,7 @@ class WC_Customer_Email_Verification_Email {
 		$cev_email_link_expired = apply_filters( 'cev_email_link_expired', false, get_current_user_id() );
 				
 		if ( $cev_email_link_expired ) {
-			$verification_message_expire = get_option( 'cev_verification_success_message', 'failed' );
+			$verification_message_expire = get_option( 'cev_verification_success_message', __( 'failed', 'customer-email-verification-for-woocommerce' ) );
 			wc_add_notice( $verification_message_expire, 'notice' );
 			echo json_encode( array('success' => 'false') );
 			die();	
@@ -305,7 +309,7 @@ class WC_Customer_Email_Verification_Email {
 			update_user_meta( get_current_user_id(), 'customer_email_verified', 'true' );
 			update_user_meta( get_current_user_id(), 'cev_user_resend_times', 0 );	
 							
-			$verification_success_message = get_option( 'cev_verification_success_message', 'Your Email is verified!' );
+			$verification_success_message = get_option( 'cev_verification_success_message', __( 'Your email is verified!', 'customer-email-verification-for-woocommerce' ) );
 			wc_add_notice( $verification_success_message, 'notice' );
 			
 			do_action('cev_new_email_enable');

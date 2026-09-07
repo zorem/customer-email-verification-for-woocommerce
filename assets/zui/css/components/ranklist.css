@@ -1,0 +1,60 @@
+/* ============================================================
+   Zorem UI — Rank list (top-N rows)
+   ------------------------------------------------------------
+   Compact numbered list for "top N" analytics (top domains,
+   top reasons, top products…). Rank index + mono label + value.
+
+   Markup:
+     <div class="zui-ranklist">
+       <div class="zui-ranklist__row">
+         <span class="zui-ranklist__rank">#1</span>
+         <span class="zui-ranklist__label">0clickemail.com</span>
+         <span class="zui-ranklist__value">1</span>
+       </div>
+     </div>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-ranklist {
+	display: flex;
+	flex-direction: column;
+}
+
+.zui-scope .zui-ranklist__row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 0;
+	border-block-start: 1px solid var(--zui-divider);
+}
+
+.zui-scope .zui-ranklist__row:first-child {
+	border-block-start: 0;
+}
+
+.zui-scope .zui-ranklist__rank {
+	width: 28px;
+	flex-shrink: 0;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--zui-text-muted);
+}
+
+.zui-scope .zui-ranklist__label {
+	flex: 1;
+	min-width: 0;
+	font-family: var(--zui-font-mono);
+	font-size: 14px;
+	color: var(--zui-text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.zui-scope .zui-ranklist__value {
+	flex-shrink: 0;
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--zui-danger);
+}

@@ -17,13 +17,54 @@ jQuery(document).ready(function($) {
         // Add a class to the register button if email_verification is false
         $('button[name="register"]').addClass('email_verification_popup');
 
+        // Track in-flight requests so a second click can never fire a second
+        // verification email while the first request is still running.
+        var cevRegisterInFlight = false;
+        var cevButtonLabel = '';
+
+        function getButtonLabel($button) {
+            return $button.is('input') ? $button.val() : $button.text();
+        }
+
+        function setButtonLabel($button, label) {
+            if ($button.is('input')) {
+                $button.val(label);
+            } else {
+                $button.text(label);
+            }
+        }
+
+        // Put the register button into its processing state and show the loader.
+        function startProcessing($button) {
+            cevRegisterInFlight = true;
+            cevButtonLabel = getButtonLabel($button);
+            setButtonLabel($button, cev_ajax.cev_processing);
+            $button.addClass('cev_processing').prop('disabled', true);
+            $('.cev_loading_overlay').css('display', 'block');
+        }
+
+        // Restore the register button so the customer can act again.
+        function stopProcessing($button) {
+            cevRegisterInFlight = false;
+            if (cevButtonLabel) {
+                setButtonLabel($button, cevButtonLabel);
+            }
+            $button.removeClass('cev_processing').prop('disabled', false);
+            $('.cev_loading_overlay').css('display', 'none');
+        }
+
         // Handle the register button click event
         $(document).on('click', '.email_verification_popup', function(e) {
             if (!otpVerified && $(this).hasClass('email_verification_popup')) {
                 e.preventDefault();
+
+                // Ignore repeat clicks while the first request is still running.
+                if (cevRegisterInFlight) {
+                    return;
+                }
+
                 clearErrors();
                 var $button = $(this);
-                $('.cev_loading_overlay').css('display', 'block');
 
                 var $form = $(this).closest('form');
                 var email = $form.find('#reg_email').val();
@@ -31,17 +72,16 @@ jQuery(document).ready(function($) {
 
                 if (!email) {
                     displayError(cev_ajax.cev_email_validation);
-                    $('.cev_loading_overlay').css('display', 'none');
                     return;
                 }
                 if (cev_ajax.password_setup_link_enabled == "no") {
                     if (!password) {
                         displayError(cev_ajax.cev_password_validation);
-                        $('.cev_loading_overlay').css('display', 'none');
                         return;
                     }
                 }
-                
+
+                startProcessing($button);
 
                 // AJAX request to check if the email is already registered
                 $.ajax({
@@ -49,26 +89,34 @@ jQuery(document).ready(function($) {
                     type: 'POST',
                     data: $('.woocommerce-form-register').serialize() + '&action=check_email_exists&nonce=' + cev_ajax.nonce,
                     success: function(response) {
-                        if (response.data.exists) {
+                        var data = (response && response.data) ? response.data : {};
+
+                        if (data.exists) {
                             displayError(cev_ajax.cev_email_exists_validation);
-                            $('.cev_loading_overlay').css('display', 'none');
-                        } else if (response.data.not_valid) {
+                            stopProcessing($button);
+                        } else if (data.not_valid) {
                             displayError(cev_ajax.cev_valid_email_validation);
-                            $('.cev_loading_overlay').css('display', 'none');
-                        } else if (response.data.already_verify) {
+                            stopProcessing($button);
+                        } else if (data.already_verify) {
+                            // Re-enable the button first, otherwise the synthetic
+                            // click below cannot submit the form.
+                            stopProcessing($button);
                             $form.find('button[name="register"]').removeClass('email_verification_popup');
                             $form.find('input[name="email_verification"]').val('true');
                             $form.find('button[name="register"]').trigger('click');
-                            $('.cev_loading_overlay').css('display', 'none');
-                        } else if (response.data.email) {
+                        } else if (data.email) {
+                            stopProcessing($button);
                             $('#otp-popup').show();
-                            $('.cev_loading_overlay').css('display', 'none');
-                        } else if (response.data.validation == false ) {
-                            displayError(response.data.message);
-                            $('.cev_loading_overlay').css('display', 'none');
+                        } else if (data.validation == false) {
+                            displayError(data.message);
+                            stopProcessing($button);
                         } else {
-                            $('.cev_loading_overlay').css('display', 'none');
+                            stopProcessing($button);
                         }
+                    },
+                    error: function(xhr, status, error) {
+                        displayError(cev_ajax.cev_error_prefix + ' ' + error);
+                        stopProcessing($button);
                     }
                 });
             }
@@ -106,8 +154,15 @@ jQuery(document).ready(function($) {
             }
         });
 
+        var cevOtpInFlight = false;
+
         $('#verify-otp-button').on('click', function(event) {
             event.preventDefault(); // Prevents page reload
+
+            // Ignore repeat clicks while a verification request is running.
+            if (cevOtpInFlight) {
+                return;
+            }
            
             function getOtpValue() {
                 var otp = '';
@@ -120,7 +175,9 @@ jQuery(document).ready(function($) {
             var $form = $('.email_verification_popup').closest('form');
             var email = $form.find('#reg_email').val();
             var otp = getOtpValue();
-           
+
+            cevOtpInFlight = true;
+
             // Verify OTP using AJAX
             $.ajax({
                 url: cev_ajax.ajax_url,
@@ -138,9 +195,11 @@ jQuery(document).ready(function($) {
                         if (response.data.verified) {
                             $('#otp-popup').hide();
 
-                            $('<p class="success-message">Your email is verified successfully.</p>').insertBefore($form);
+                            $('<p class="success-message">' + cev_ajax.cev_verified_success + '</p>').insertBefore($form);
 
-                            $form.find('button[name="register"]').removeClass('email_verification_popup');
+                            // Make sure the button is enabled before the synthetic
+                            // click, otherwise the form cannot be submitted.
+                            $form.find('button[name="register"]').removeClass('email_verification_popup cev_processing').prop('disabled', false);
                             $form.find('input[name="email_verification"]').val('true');
                             $form.find('button[name="register"]').trigger('click');
                         } else {
@@ -151,14 +210,27 @@ jQuery(document).ready(function($) {
                     }
                 },
                 error: function(xhr, status, error) {
-                    displayError('Error: ' + error);
+                    displayError(cev_ajax.cev_error_prefix + ' ' + error);
+                },
+                complete: function() {
+                    cevOtpInFlight = false;
                 }
             });
         });
 
+        var cevResendInFlight = false;
+
         $('.send_again_link').on('click', function() {
+            // Ignore repeat clicks while a resend request is running.
+            if (cevResendInFlight) {
+                return;
+            }
+
             var $form = $('.woocommerce-form-register__submit').closest('form');
             var email = $form.find('#reg_email').val();
+
+            cevResendInFlight = true;
+
             $.ajax({
                 url: cev_ajax.ajax_url,
                 type: 'POST',
@@ -178,7 +250,10 @@ jQuery(document).ready(function($) {
                     }
                 },
                 error: function(xhr, status, error) {
-                    displayError('Error: ' + error);
+                    displayError(cev_ajax.cev_error_prefix + ' ' + error);
+                },
+                complete: function() {
+                    cevResendInFlight = false;
                 }
             });
         });

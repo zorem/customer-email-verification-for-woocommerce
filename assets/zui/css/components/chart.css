@@ -1,0 +1,51 @@
+/* ============================================================
+   Zorem UI — Chart card + legend
+   ------------------------------------------------------------
+   ZUI does NOT bundle a charting engine. The consumer plugin
+   renders its own canvas/SVG inside .zui-chart-card; this file
+   only provides the surrounding card padding + a shared legend.
+
+   Markup:
+     <div class="zui-card zui-chart-card">
+       <h3 class="zui-card__title">Signups vs verified vs blocked</h3>
+       <canvas id="cev-chart"></canvas>     <!-- plugin renders here -->
+       <div class="zui-chart-legend">
+         <span class="zui-chart-legend__item">
+           <span class="zui-chart-legend__dot" style="background:var(--zui-primary)"></span>
+           Signups
+         </span>
+       </div>
+     </div>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-chart-card {
+	padding: 24px;
+}
+
+.zui-scope .zui-chart-legend {
+	display: flex;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 24px;
+	margin-block-start: 16px;
+	padding-block-start: 16px;
+	border-block-start: 1px solid var(--zui-divider);
+}
+
+.zui-scope .zui-chart-legend__item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--zui-text-soft);
+}
+
+.zui-scope .zui-chart-legend__dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 999px;
+	background: var(--zui-primary);
+}

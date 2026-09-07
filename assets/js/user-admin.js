@@ -1,13 +1,22 @@
-/* zorem_snackbar jquery */
+/* zorem_snackbar_user_admin shim — delegates to ZUI.snackbar() when the
+   shared Zorem UI library is loaded (assets/zui/js/zui.js). Falls back
+   to the legacy inline toast div when the library isn't deployed. */
 (function( $ ){
-$.fn.zorem_snackbar_user_admin = function(msg) {
-var zorem_snackbar_user_admin = $("<div></div>").addClass('zorem_snackbar_user_admin show_snackbar_user_admin').text( msg );
-$("body").append(zorem_snackbar_user_admin);
 
-setTimeout(function(){ zorem_snackbar_user_admin.remove(); }, 3000);
+	function cevUserAdminFallback( msg ) {
+		var $t = $( '<div></div>' ).addClass( 'zorem_snackbar_user_admin show_snackbar_user_admin' ).text( msg );
+		$( 'body' ).append( $t );
+		setTimeout( function () { $t.remove(); }, 3000 );
+	}
 
-return this;
-};
+	$.fn.zorem_snackbar_user_admin = function ( msg ) {
+		if ( window.ZUI && typeof window.ZUI.snackbar === 'function' ) {
+			window.ZUI.snackbar( msg, { type: 'success' } );
+		} else {
+			cevUserAdminFallback( msg );
+		}
+		return this;
+	};
 })( jQuery );
 
 jQuery(document).on('click', '.cev_dashicons_icon_unverify_user', function(e) {	

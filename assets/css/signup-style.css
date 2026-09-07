@@ -391,3 +391,38 @@ a.a_cev_resend_checkout {
     display: flex;
     width: 30px;
 }
+/* Processing state for the register button + full-page loader. */
+.cev_loading_overlay__inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    line-height: 1.4;
+}
+.cev_loading_spinner {
+    display: block;
+    margin: 0 auto 10px;
+    width: 34px;
+    height: 34px;
+    border: 3px solid rgba(0, 0, 0, 0.15);
+    border-top-color: #212121;
+    border-radius: 50%;
+    animation: cev_spin 0.8s linear infinite;
+}
+.cev_loading_overlay__text {
+    display: block;
+    font-size: 14px;
+    color: #212121;
+}
+button[name="register"].cev_processing,
+button[name="register"][disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+@keyframes cev_spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

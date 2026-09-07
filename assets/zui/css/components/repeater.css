@@ -1,0 +1,93 @@
+/* ============================================================
+   Zorem UI — Repeater (add / remove field rows)
+   ------------------------------------------------------------
+   Generic add/remove list of field rows. Reusable for per-item
+   messages, rules, reasons, holidays, etc.
+
+   Markup (auto-wired by zui.js via data-zui-repeater):
+     <div class="zui-repeater" data-zui-repeater>
+       <p class="zui-repeater__empty">No items yet…</p>
+       <div class="zui-repeater__row">
+         <input class="zui-input" …>
+         <input class="zui-input" …>
+         <button type="button" class="zui-repeater__remove" aria-label="Remove">
+           <svg class="zui-icon">…</svg>
+         </button>
+       </div>
+       <button type="button" class="zui-repeater__add">
+         <svg class="zui-icon">…</svg> Add item
+       </button>
+       <template> … one .zui-repeater__row to clone … </template>
+     </div>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-repeater {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.zui-scope .zui-repeater__row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	flex-wrap: wrap;
+	background: var(--zui-surface);
+	border: 1px solid var(--zui-border);
+	border-radius: var(--zui-radius-xl);
+	padding: 8px;
+}
+
+.zui-scope .zui-repeater__row .zui-input {
+	flex: 1 1 160px;
+	min-width: 0;
+}
+
+.zui-scope .zui-repeater__remove {
+	margin-inline-start: auto;
+	padding: 6px;
+	background: none;
+	border: 0;
+	border-radius: 8px;
+	color: var(--zui-text-muted);
+	cursor: pointer;
+	display: inline-flex;
+}
+
+.zui-scope .zui-repeater__remove:hover {
+	color: #e11d48;
+	background: var(--zui-bg);
+}
+
+.zui-scope .zui-repeater__add {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	align-self: flex-start;
+	background: none;
+	border: 0;
+	padding: 4px 0;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--zui-primary-600);
+	cursor: pointer;
+}
+
+.zui-scope .zui-repeater__add .zui-icon {
+	width: 14px;
+	height: 14px;
+}
+
+.zui-scope .zui-repeater__empty {
+	margin: 0;
+	text-align: center;
+	font-style: italic;
+	font-size: 12px;
+	color: var(--zui-text-muted);
+	background: var(--zui-surface);
+	border: 1px solid var(--zui-border);
+	border-radius: var(--zui-radius-xl);
+	padding: 16px;
+}

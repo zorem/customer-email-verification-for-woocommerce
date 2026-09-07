@@ -1,0 +1,45 @@
+/* ============================================================
+   Zorem UI — Bulk bar (table toolbar)
+   ------------------------------------------------------------
+   Toolbar strip above a data table: a left cluster (bulk-action
+   select + Apply) and a right cluster (Export, etc.). Designed
+   to sit as the first child of a table card.
+
+   Markup:
+     <div class="zui-bulkbar">
+       <div class="zui-bulkbar__group">
+         <div class="zui-select-wrap"> <select class="zui-select">…</select> … </div>
+         <button class="zui-btn-soft">Apply</button>
+       </div>
+       <div class="zui-bulkbar__group">
+         <button class="zui-btn-soft"><svg class="zui-icon">…</svg> Export CSV</button>
+       </div>
+     </div>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-bulkbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	padding: 16px 20px;
+	background: var(--zui-bg);
+	border-block-end: 1px solid var(--zui-divider);
+}
+
+/* As the first child of a card, follow the card's rounded top corners —
+   otherwise the bar's square grey corners paint over the card radius. */
+.zui-scope .zui-card > .zui-bulkbar:first-child {
+	border-start-start-radius: calc(var(--zui-radius-2xl) - 1px);
+	border-start-end-radius: calc(var(--zui-radius-2xl) - 1px);
+}
+
+.zui-scope .zui-bulkbar__group {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}

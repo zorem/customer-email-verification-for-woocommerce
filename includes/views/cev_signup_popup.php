@@ -55,6 +55,13 @@ $image = get_option(
 $content_align = get_option( 'cev_content_align', 'center' );
 ?>
 
+<div class="cev_loading_overlay" role="status" aria-live="polite">
+	<div class="cev_loading_overlay__inner">
+		<span class="cev_loading_spinner" aria-hidden="true"></span>
+		<span class="cev_loading_overlay__text"><?php esc_html_e( 'Please wait...', 'customer-email-verification-for-woocommerce' ); ?></span>
+	</div>
+</div>
+
 <div id="otp-popup" style="display: none;" class="cev-authorization-grid__visual">
 	<div class="otp_popup_inn">
 		<div class="otp_content">
@@ -98,9 +105,9 @@ $content_align = get_option( 'cev_content_align', 'center' );
 
 									<div class="error_mesg"></div>
 
-									<button id="verify-otp-button" style="display: none;" type="button"><?php esc_html_e( 'Verify', 'customer-email-verification' ); ?></button>
+									<button id="verify-otp-button" style="display: none;" type="button"><?php esc_html_e( 'Verify', 'customer-email-verification-for-woocommerce' ); ?></button>
 
-									<p class="resend_sucsess" style="color: green; display:none"><?php esc_html_e( 'Otp Sent Successfully', 'customer-email-verification' ); ?></p>
+									<p class="resend_sucsess" style="color: green; display:none"><?php esc_html_e( 'Otp Sent Successfully', 'customer-email-verification-for-woocommerce' ); ?></p>
 								</div>
 							</section>
 

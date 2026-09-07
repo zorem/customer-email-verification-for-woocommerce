@@ -1,0 +1,96 @@
+/* ============================================================
+   Zorem UI — Actions menu (kebab dropdown)
+   ------------------------------------------------------------
+   Row / item overflow menu. Behaviour (open, click-outside,
+   Esc) is already wired in zui.js — these class names match it
+   exactly, so no JS change is needed.
+
+   Markup:
+     <div class="zui-actions">
+       <button type="button" class="zui-actions-toggle" aria-haspopup="true"
+               aria-expanded="false" aria-label="Actions">
+         <svg class="zui-icon"> … vertical dots … </svg>
+       </button>
+       <div class="zui-actions-menu" hidden role="menu">
+         <button type="button" class="zui-actions-item">
+           <svg class="zui-icon">…</svg> Send reminder
+         </button>
+         <button type="button" class="zui-actions-item zui-actions-item--danger">
+           <svg class="zui-icon">…</svg> Delete
+         </button>
+       </div>
+     </div>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-actions {
+	position: relative;
+	display: inline-block;
+}
+
+.zui-scope .zui-actions-toggle {
+	padding: 6px;
+	background: none;
+	border: 0;
+	border-radius: 8px;
+	color: var(--zui-text-muted);
+	cursor: pointer;
+	display: inline-flex;
+}
+
+.zui-scope .zui-actions-toggle:hover {
+	background: var(--zui-bg);
+	color: var(--zui-text-soft);
+}
+
+.zui-scope .zui-actions-menu {
+	position: absolute;
+	inset-inline-end: 0;
+	margin-block-start: 4px;
+	min-width: 160px;
+	z-index: 20;
+	background: var(--zui-surface);
+	border: 1px solid var(--zui-border);
+	border-radius: var(--zui-radius-xl);
+	box-shadow: var(--zui-shadow-md);
+	overflow: hidden;
+}
+
+.zui-scope .zui-actions-menu[hidden] {
+	display: none;
+}
+
+.zui-scope .zui-actions-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 12px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--zui-text-soft);
+	background: none;
+	border: 0;
+	cursor: pointer;
+	text-align: start;
+}
+
+.zui-scope .zui-actions-item .zui-icon {
+	width: 14px;
+	height: 14px;
+}
+
+.zui-scope .zui-actions-item:hover {
+	background: var(--zui-bg);
+	color: var(--zui-primary-600);
+}
+
+.zui-scope .zui-actions-item--danger {
+	color: #e11d48;
+}
+
+.zui-scope .zui-actions-item--danger:hover {
+	background: var(--zui-danger-bg);
+	color: #e11d48;
+}

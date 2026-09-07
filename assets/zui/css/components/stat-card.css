@@ -1,0 +1,69 @@
+/* ============================================================
+   Zorem UI — Stat card (KPI)
+   ------------------------------------------------------------
+   Dashboard KPI tile: a short accent bar, an uppercase label,
+   a big value, and an optional delta line. Composes on .zui-card
+   and is usually placed inside a .zui-card-grid.
+
+   Markup:
+     <div class="zui-card zui-stat">
+       <span class="zui-stat__accent zui-stat__accent--success"></span>
+       <div class="zui-stat__label">Verified</div>
+       <div class="zui-stat__value">2</div>
+       <div class="zui-stat__delta">▲ +100% vs previous period</div>
+     </div>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-stat {
+	padding: 24px;
+}
+
+.zui-scope .zui-stat__accent {
+	display: block;
+	width: 32px;
+	height: 6px;
+	border-radius: 999px;
+	margin-block-end: 12px;
+	background: var(--zui-primary);
+}
+
+.zui-scope .zui-stat__accent--success { background: var(--zui-success); }
+.zui-scope .zui-stat__accent--danger  { background: var(--zui-danger); }
+.zui-scope .zui-stat__accent--warning { background: var(--zui-warning); }
+.zui-scope .zui-stat__accent--info    { background: var(--zui-info); }
+
+.zui-scope .zui-stat__label {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--zui-text-muted);
+}
+
+.zui-scope .zui-stat__value {
+	margin-block-start: 8px;
+	font-size: 30px;
+	font-weight: 700;
+	line-height: 1.1;
+	color: var(--zui-text-strong);
+}
+
+.zui-scope .zui-stat__delta {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-block-start: 8px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--zui-success);
+}
+
+.zui-scope .zui-stat__delta--down {
+	color: var(--zui-danger);
+}
+
+.zui-scope .zui-stat__delta--flat {
+	color: var(--zui-text-muted);
+}

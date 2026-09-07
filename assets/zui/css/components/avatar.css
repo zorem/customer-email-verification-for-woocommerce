@@ -1,0 +1,41 @@
+/* ============================================================
+   Zorem UI — Avatar (letter in circle)
+   ------------------------------------------------------------
+   Initials badge for user / customer lists. Color is driven by
+   two custom props so any row can tint its own avatar:
+
+     <span class="zui-avatar" style="--zui-c:#fee2e2;--zui-c-fg:#b91c1c">S</span>
+
+   Defaults to the primary tint when no custom props are set.
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-avatar {
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1;
+	background: var(--zui-c, var(--zui-primary-50));
+	color: var(--zui-c-fg, var(--zui-primary-600));
+}
+
+/* User cell — avatar + a stacked name/email meta block, for user/customer
+   table rows. Pair with .zui-table's td strong/small for the two lines. */
+.zui-scope .zui-cell-user {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.zui-scope .zui-cell-user__meta {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}

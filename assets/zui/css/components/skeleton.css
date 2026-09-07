@@ -1,0 +1,38 @@
+/* ============================================================
+   Zorem UI — Skeleton (loading placeholder)
+   ------------------------------------------------------------
+   Shimmering placeholder blocks shown while content loads.
+   Default is a short text-line bar; modifiers size it for
+   headings, chart areas, and thin pills.
+
+   Markup:
+     <span class="zui-skeleton"></span>
+     <span class="zui-skeleton zui-skeleton--lg"></span>
+     <div class="zui-skeleton zui-skeleton--chart"></div>
+
+   Phase: 1 (added v1.3.0)
+   ============================================================ */
+
+.zui-scope .zui-skeleton {
+	display: block;
+	height: 14px;
+	margin-block-end: 10px;
+	border-radius: var(--zui-radius-md);
+	background: linear-gradient( 90deg, var(--zui-divider) 25%, #eef2f7 37%, var(--zui-divider) 63% );
+	background-size: 400% 100%;
+	animation: zui-skeleton 1.4s ease infinite;
+}
+
+.zui-scope .zui-skeleton:last-child {
+	margin-block-end: 0;
+}
+
+.zui-scope .zui-skeleton--lg    { height: 28px; }
+.zui-scope .zui-skeleton--pill  { height: 8px; width: 40%; }
+.zui-scope .zui-skeleton--label { height: 10px; width: 55%; }
+.zui-scope .zui-skeleton--chart { height: 240px; }
+
+@keyframes zui-skeleton {
+	0%   { background-position: 100% 50%; }
+	100% { background-position: 0 50%; }
+}

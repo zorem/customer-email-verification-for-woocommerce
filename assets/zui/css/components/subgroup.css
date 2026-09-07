@@ -1,0 +1,32 @@
+/* ============================================================
+   Zorem UI — Subgroup (conditional reveal group)
+   ------------------------------------------------------------
+   Indented group of dependent rows revealed by a parent toggle.
+   Carries an accent left border so the dependency reads visually.
+
+   Markup:
+     <div class="zui-row zui-row--inline"> … parent toggle … </div>
+     <div class="zui-subgroup">           <!-- add .is-disabled when parent off -->
+       <div class="zui-row"> … dependent field … </div>
+       <div class="zui-row"> … dependent field … </div>
+     </div>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-subgroup {
+	margin-block-start: 8px;
+	padding-inline-start: 24px;
+	border-inline-start: 2px solid var(--zui-primary-100);
+}
+
+.zui-scope .zui-subgroup.is-disabled {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+@media (max-width: 782px) {
+	.zui-scope .zui-subgroup {
+		padding-inline-start: 16px;
+	}
+}

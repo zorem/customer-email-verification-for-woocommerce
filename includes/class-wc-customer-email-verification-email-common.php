@@ -278,7 +278,7 @@ class WC_Customer_Email_Verification_Email_Common {
 		if ( is_account_page() ) {
 			ob_start(); 
 			?>
-			<a href="#" class="cev-link-try-again send_again_link"><?php esc_html_e( 'Try Again', 'customer-email-verification' ); ?></a>
+			<a href="#" class="cev-link-try-again send_again_link"><?php esc_html_e( 'Try Again', 'customer-email-verification-for-woocommerce' ); ?></a>
 			<?php 
 			$try_again_url = ob_get_clean();
 			return $try_again_url;

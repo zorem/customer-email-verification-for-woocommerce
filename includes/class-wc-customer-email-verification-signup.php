@@ -84,10 +84,15 @@ class CEV_Signup_Verification {
 			'password_setup_link_enabled' =>  get_option('woocommerce_registration_generate_password', 'no'), // Password setup option.
 
 			// Validation messages.
-			'cev_password_validation' => __( 'Password is required.', 'customer-email-verification' ),
-			'cev_email_validation' => __( 'Email is required.', 'customer-email-verification' ),
-			'cev_email_exists_validation' => __( 'An account with this email address already exists. Please use a different email or log in to your existing account.', 'customer-email-verification' ),
-			'cev_valid_email_validation' => __( 'Enter a valid email address.', 'customer-email-verification' ),
+			'cev_password_validation' => __( 'Password is required.', 'customer-email-verification-for-woocommerce' ),
+			'cev_email_validation' => __( 'Email is required.', 'customer-email-verification-for-woocommerce' ),
+			'cev_email_exists_validation' => __( 'An account with this email address already exists. Please use a different email or log in to your existing account.', 'customer-email-verification-for-woocommerce' ),
+			'cev_valid_email_validation' => __( 'Enter a valid email address.', 'customer-email-verification-for-woocommerce' ),
+
+			// Popup / OTP messages.
+			'cev_verified_success' => __( 'Your email is verified successfully.', 'customer-email-verification-for-woocommerce' ),
+			'cev_error_prefix' => __( 'Error:', 'customer-email-verification-for-woocommerce' ),
+			'cev_processing' => __( 'Please wait...', 'customer-email-verification-for-woocommerce' ),
 		));
 		
 	}
@@ -111,7 +116,7 @@ class CEV_Signup_Verification {
 		if (!$nonce || !wp_verify_nonce($nonce, 'verify_otp_nonce')) {
 			wp_send_json_error(array(
 				'verified' => false,
-				'message'  => __('Nonce verification failed.', 'customer-email-verification'),
+				'message'  => __('Nonce verification failed.', 'customer-email-verification-for-woocommerce'),
 			));
 		}
 
@@ -120,7 +125,7 @@ class CEV_Signup_Verification {
 		if (empty($recipient)) {
 			wp_send_json_error(array(
 				'verified' => false,
-				'message'  => __('Email address is required.', 'customer-email-verification'),
+				'message'  => __('Email address is required.', 'customer-email-verification-for-woocommerce'),
 			));
 		}
 		 // Send the OTP email.
@@ -130,12 +135,12 @@ class CEV_Signup_Verification {
 		if ($result) {
 			 wp_send_json_success(array(
 				 'email' => $recipient,
-				 'message' => __('OTP has been resent successfully.', 'customer-email-verification'),
+				 'message' => __('OTP has been resent successfully.', 'customer-email-verification-for-woocommerce'),
 			 ));
 		} else {
 			 wp_send_json_error(array(
 				 'verified' => false,
-				 'message'  => __('Failed to resend OTP. Please try again.', 'customer-email-verification'),
+				 'message'  => __('Failed to resend OTP. Please try again.', 'customer-email-verification-for-woocommerce'),
 			 ));
 		}
 		
@@ -147,21 +152,21 @@ class CEV_Signup_Verification {
 		if (!$nonce || !wp_verify_nonce($nonce, 'verify_otp_nonce')) {
 			  wp_send_json_error(array(
 				  'verified' => false,
-				  'message'  => __('Nonce verification failed.', 'customer-email-verification'),
+				  'message'  => __('Nonce verification failed.', 'customer-email-verification-for-woocommerce'),
 			  ));
 		}
 		$email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
 		if (!is_email($email)) {
 			wp_send_json_error(array(
 				'not_valid' => true,
-				'message'   => __('Invalid email address.', 'customer-email-verification'),
+				'message'   => __('Invalid email address.', 'customer-email-verification-for-woocommerce'),
 			));
 		}
 
 		if (email_exists($email)) {
 			wp_send_json_success(array(
 				'exists'  => true,
-				'message' => __('An account with this email already exists.', 'customer-email-verification'),
+				'message' => __('An account with this email already exists.', 'customer-email-verification-for-woocommerce'),
 			));
 		}
 		$errors = new WP_Error();		
@@ -180,7 +185,7 @@ class CEV_Signup_Verification {
 		if ($email_sent) {
 			wp_send_json_success(array(
 				'email'   => $email,
-				'message' => __('Verification email has been sent.', 'customer-email-verification'),
+				'message' => __('Verification email has been sent.', 'customer-email-verification-for-woocommerce'),
 			));
 		}
 	}
@@ -188,6 +193,18 @@ class CEV_Signup_Verification {
 	public function send_signup_verification_email( $recipient ) {
 
 		woo_customer_email_verification()->install->create_user_log_table();
+
+		/*
+		 * Throttle repeat sends for the same address. Without this, every extra
+		 * click on the Register button issues a brand new PIN and overwrites the
+		 * stored one, which silently invalidates the code in the email the
+		 * customer already received.
+		 */
+		if ( $this->is_verification_email_throttled( $recipient ) ) {
+			// The previously sent code is still valid, so reuse it and skip the send.
+			wp_send_json_success( array( 'email' => true ) );
+		}
+
 		$verification_pin = WC_customer_email_verification_email_Common()->generate_verification_pin();
 		$cev_initialise_customizer_settings = new cev_initialise_customizer_settings();	
 		$expire_time =  get_option('cev_verification_code_expiration', 'never');
@@ -278,6 +295,42 @@ class CEV_Signup_Verification {
 	}
 
 	/**
+	 * Check whether a verification email was already sent to this address moments ago.
+	 *
+	 * Guards against duplicate clicks on the Register button, each of which would
+	 * otherwise send another email and regenerate the stored PIN.
+	 *
+	 * @param string $recipient Email address the code would be sent to.
+	 * @return bool True when the last send is still inside the throttle window.
+	 */
+	public function is_verification_email_throttled( $recipient ) {
+
+		$throttle_seconds = (int) apply_filters( 'cev_verification_email_throttle_seconds', 30, $recipient );
+		if ( 1 > $throttle_seconds ) {
+			return false;
+		}
+
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
+		$last_sent = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT last_updated FROM {$wpdb->prefix}cev_user_log WHERE email = %s",
+				$recipient
+			)
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
+
+		if ( empty( $last_sent ) ) {
+			return false;
+		}
+
+		$elapsed = strtotime( current_time( 'mysql' ) ) - strtotime( $last_sent );
+
+		return 0 <= $elapsed && $elapsed < $throttle_seconds;
+	}
+
+	/**
 	 * Get the from address for outgoing emails.
 	 *
 	 * @return string
@@ -306,7 +359,7 @@ class CEV_Signup_Verification {
 		
 		$nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
 		if (!$nonce || !wp_verify_nonce($nonce, 'verify_otp_nonce')) {
-			wp_send_json_error(array('verified' => false, 'message' => __('Nonce verification failed.', 'customer-email-verification')));
+			wp_send_json_error(array('verified' => false, 'message' => __('Nonce verification failed.', 'customer-email-verification-for-woocommerce')));
 		}
 		if (!isset($_POST['otp'])) {
 			wp_send_json_error(array('verified' => false));
@@ -323,19 +376,19 @@ class CEV_Signup_Verification {
 		
 		if ($row) {
 			if ($row->verified) {
-				wp_send_json_error(array('verified' => false, 'message' => __('Already verified.', 'customer-email-verification')));
+				wp_send_json_error(array('verified' => false, 'message' => __('Already verified.', 'customer-email-verification-for-woocommerce')));
 			} else {
 				$wpdb->delete(
 					"{$wpdb->prefix}cev_user_log",
 					array('id' => $row->id),
 					array('%d')
 				);
-				wp_send_json_success(array('verified' => true, 'message' => __('Registration and verification successful', 'customer-email-verification'), 'redirect_url' =>  home_url() . '/my-account/'));
+				wp_send_json_success(array('verified' => true, 'message' => __('Registration and verification successful', 'customer-email-verification-for-woocommerce'), 'redirect_url' =>  home_url() . '/my-account/'));
 						
 				
 			}
 		} else {
-			wp_send_json_error(array('verified' => false, 'message' =>  __('The OTP you entered is incorrect. Please check your email and try again.', 'customer-email-verification')));
+			wp_send_json_error(array('verified' => false, 'message' =>  __('The OTP you entered is incorrect. Please check your email and try again.', 'customer-email-verification-for-woocommerce')));
 		}
 	}
 	public function authenticate_user_by_email_link() {
@@ -363,7 +416,7 @@ class CEV_Signup_Verification {
 					update_user_meta( $user->ID, 'customer_email_verified', 'true' );
 					update_user_meta( $user->ID, 'cev_user_resend_times', 0 );
 					wc_maybe_store_user_agent($user->user_login, $user);
-					wp_send_json_success(array('verified' => true, 'message' => __('Verification successful', 'customer-email-verification'), 'redirect_url' => home_url()));
+					wp_send_json_success(array('verified' => true, 'message' => __('Verification successful', 'customer-email-verification-for-woocommerce'), 'redirect_url' => home_url()));
 				} else {
 					// User does not exist, create a new customer
 					$new_customer = wc_create_new_customer( sanitize_email( $email ), '', $password );
@@ -379,7 +432,7 @@ class CEV_Signup_Verification {
 						wp_redirect( home_url() . '/my-account/' );
 						exit;
 					} else {
-						wp_send_json_error(array('verified' => false, 'message' =>  __('Error creating user', 'customer-email-verification')));
+						wp_send_json_error(array('verified' => false, 'message' =>  __('Error creating user', 'customer-email-verification-for-woocommerce')));
 					}
 				}	
 			}

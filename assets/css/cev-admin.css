@@ -1,0 +1,1022 @@
+/* =====================================================================
+ * CEV — Plugin-specific overrides on top of the Zorem UI library.
+ * ---------------------------------------------------------------------
+ * Every rule here lives outside `.zui-scope` OR under `.zui-scope.cev-admin`
+ * so we never leak into the shared library or into wp-admin.
+ *
+ * The Zorem UI library (assets/zui/) is READ-ONLY in this repo. Any
+ * plugin-only cosmetics MUST land here, with a `cev-` / `cev_` prefix.
+ * ===================================================================== */
+
+/* ---------------------------------------------------------------------
+ * Hide the legacy CEV chrome (old radio tabs + divider) so the new ZUI
+ * header is the only navigation surface on the page. The radio inputs
+ * themselves stay in the DOM because the existing body uses the CSS
+ * `:checked` selector on `.cev_tab_input` to show/hide each panel.
+ * --------------------------------------------------------------------- */
+
+body.customer-email-verification-for-woocommerce .cev_nav_div > label.cev_tab_label,
+body.customer-email-verification-for-woocommerce .cev_nav_div > a.menu_cev_link {
+	display: none !important;
+}
+
+body.customer-email-verification-for-woocommerce .cev_nav_div > input.cev_tab_input {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	clip: rect(0 0 0 0);
+	overflow: hidden;
+}
+
+/* Tab panels — all three live in the DOM at once; JS toggles [hidden].
+   The 24px page gutter lives on the panel (matches the CEV Pro chrome),
+   so every tab — with or without a sidebar — gets the same outer inset
+   without any extra wrapper. */
+.zui-scope.cev-admin .cev-tab-panel {
+	padding: 24px;
+	margin: 0;
+}
+
+.zui-scope.cev-admin .cev-tab-panel[hidden] {
+	display: none !important;
+}
+
+/* Library .zui-layout already supplies flex + 16px gap + padding 0.
+   We just zero its margin so all spacing comes from .cev-tab-panel. */
+.zui-scope.cev-admin .zui-layout {
+	margin: 0;
+}
+
+/* Drop WP's default 10px left padding on #wpcontent so the ZUI app fills
+   the full admin canvas edge-to-edge (matches CEV Pro chrome). */
+body.customer-email-verification-for-woocommerce #wpcontent {
+	padding: 0 !important;
+}
+
+/* =====================================================================
+ * Settings page chrome (lives inside .zui-scope.cev-admin).
+ * ===================================================================== */
+
+.zui-scope.cev-admin {
+	padding: 0;
+}
+
+/* ─── Sidebar ───
+ * Uses the library's .zui-sidebar / .zui-sidebar__nav / .zui-sidebar__item
+ * components directly — no plugin-side overrides needed. The Quick Help
+ * card slot inside the sidebar is also library-styled (.zui-quickhelp).
+ *
+ * PRO-locked sidebar items (e.g. Maintenance on the Free build's
+ * Unverified Users tab) get the `cev-sidebar-locked` modifier — muted
+ * look + not-allowed cursor + PRO badge at the far right.
+ */
+
+.zui-scope.cev-admin .zui-sidebar__item.cev-sidebar-locked {
+	cursor: not-allowed;
+	opacity: 0.65;
+	color: #94a3b8;
+}
+
+.zui-scope.cev-admin .zui-sidebar__item.cev-sidebar-locked:hover {
+	background: transparent;
+	color: #94a3b8;
+}
+
+.zui-scope.cev-admin .zui-sidebar__item.cev-sidebar-locked .zui-sidebar__icon {
+	color: #94a3b8;
+}
+
+/* PRO badge + lock icon cluster inside a sidebar item — push the
+   whole .cev-pro-tag to the far right of the row. The badge + lock
+   styling itself comes from the global .cev-pro-badge / .cev-pro-lock-*
+   rules (identical to the field-row PRO pattern, so the two look the
+   same byte-for-byte). */
+.zui-scope.cev-admin .zui-sidebar__item .cev-pro-tag {
+	margin-inline-start: auto;
+}
+
+/* ─── Section header ───
+ * Uses the library's .zui-section-header (border, padding, icon tile,
+ * title, sub, actions) directly — no plugin-side overrides needed.
+ *
+ * The save-button rules below duplicate the library's savebtn.css so
+ * the button stays styled even when the deployed assets/zui/css/zui.css
+ * is an older build that doesn't yet @import the savebtn.css component.
+ * Selector specificity (.zui-scope.cev-admin) beats anything else.
+ */
+
+.zui-scope.cev-admin .zui-savebtn-wrap {
+	display: inline-flex;
+}
+
+.zui-scope.cev-admin .zui-section-header .zui-savebtn,
+.zui-scope.cev-admin .zui-section-header .woocommerce-save-button,
+.zui-scope.cev-admin .zui-section-header button.cev_settings_save {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 20px;
+	background: #3b64d3;
+	color: #fff;
+	border: 0;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1;
+	cursor: pointer;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+	text-shadow: none;
+	text-decoration: none;
+	transition: background 0.15s ease;
+}
+
+.zui-scope.cev-admin .zui-section-header .zui-savebtn:hover,
+.zui-scope.cev-admin .zui-section-header .woocommerce-save-button:hover,
+.zui-scope.cev-admin .zui-section-header button.cev_settings_save:hover {
+	background: #2d4db5;
+	color: #fff;
+}
+
+.zui-scope.cev-admin .zui-section-header .zui-savebtn:focus,
+.zui-scope.cev-admin .zui-section-header button.cev_settings_save:focus {
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(59, 100, 211, 0.25);
+}
+
+.zui-scope.cev-admin .zui-section-header .zui-savebtn[disabled] {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+/* ─── Cards & rows ─── */
+
+/* Tighten the vertical padding on every field row (library default is
+   32px top + bottom; we want a more compact 16px). Horizontal padding
+   stays at the library's 32px because `padding-block` only touches
+   the vertical axis. */
+.zui-scope.cev-admin .zui-card .zui-row {
+	padding-block: 16px;
+}
+
+.zui-scope.cev-admin .cev-row:not(.zui-row--inline):not(.cev-row--subheader) .zui-row__head .cev-pro-tag {
+	margin-inline-start: 8px;
+	vertical-align: middle;
+}
+
+/* Textarea styling — the shared library does not ship textarea.css yet
+   (it's still in Phase 2). Provide a reasonable default here so the
+   .zui-textarea class actually styles up under .cev-admin. Matches the
+   Pro plugin's roomier 14px padding so the success-message textarea
+   reads identical in Free and Pro. */
+.zui-scope.cev-admin .zui-textarea {
+	display: block;
+	width: 100%;
+	min-height: 88px;
+	padding: 14px;
+	border: 1px solid #cbd5e1;
+	border-radius: 8px;
+	font-family: inherit;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #1e293b;
+	background: #fff;
+	box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+	resize: vertical;
+	box-sizing: border-box;
+}
+
+.zui-scope.cev-admin .zui-textarea:focus {
+	outline: none;
+	border-color: #3b64d3;
+	box-shadow: 0 0 0 3px rgba(59, 100, 211, 0.12);
+}
+
+.zui-scope.cev-admin .zui-textarea[disabled] {
+	opacity: 0.7;
+	background: #f8fafc;
+	cursor: not-allowed;
+	color: #94a3b8;
+}
+
+/* Inline-row control widths — mirror the Pro plugin so dropdowns and
+   short-message textareas sit to the right of the label in a fixed,
+   readable width instead of stretching full-width. */
+.zui-scope.cev-admin .zui-row--inline .zui-select-wrap {
+	flex: 0 0 auto;
+	width: 260px;
+	max-width: 100%;
+}
+
+.zui-scope.cev-admin .zui-row--inline .zui-textarea {
+	flex: 0 0 auto;
+	width: 340px;
+	max-width: 100%;
+	min-height: 96px;
+}
+
+.zui-scope.cev-admin .zui-row--inline:has(.zui-textarea) {
+	align-items: flex-start;
+}
+
+.zui-scope.cev-admin .zui-row--inline .zui-ms {
+	flex: 0 0 auto;
+	width: 260px;
+	max-width: 100%;
+}
+
+/* The subheader row (Unrecognized Login Conditions:) keeps its own
+   class because the library has no equivalent "text label between
+   field rows" component. */
+
+.zui-scope.cev-admin .cev-row--subheader {
+	padding: 4px 32px 0;
+	border-block-end: 0;
+}
+
+.zui-scope.cev-admin .cev-row__subheader {
+	margin: 0;
+	font-size: 12px;
+	font-weight: 600;
+	color: #64748b;
+	text-transform: none;
+}
+
+/* ─── PRO badge + lock icon ─── */
+
+.zui-scope.cev-admin .cev-pro-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.zui-scope.cev-admin .cev-pro-badge {
+	display: inline-block;
+	background: #c7d2fe;
+	color: #4338ca;
+	font-size: 9px;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	padding: 3px 7px;
+	border-radius: 4px;
+}
+
+.zui-scope.cev-admin .cev-pro-lock-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #cbd5e1;
+}
+
+.zui-scope.cev-admin .cev-pro-lock-icon .cev-pro-lock-svg {
+	width: 13px;
+	height: 13px;
+}
+
+/* Locked-row look: muted label + disabled control state. */
+.zui-scope.cev-admin .cev-pro-locked-field .zui-row__label {
+	color: #1e293b;
+}
+
+.zui-scope.cev-admin .cev-pro-locked-field .zui-toggle__input:disabled + .zui-toggle__track {
+	opacity: 1;
+}
+
+/* "Enabled" look for the first locked toggle in Login Auth (matches screenshot). */
+.zui-scope.cev-admin .cev-pro-locked-field .zui-toggle__input:checked:disabled + .zui-toggle__track {
+	background: #c7d2fe;
+}
+
+.zui-scope.cev-admin .cev-pro-locked-field .zui-toggle__input:checked:disabled + .zui-toggle__track .zui-toggle__thumb {
+	transform: translateX(16px);
+	background: #fff;
+}
+
+.zui-scope.cev-admin .cev-pro-locked-field .zui-select[disabled],
+.zui-scope.cev-admin .cev-pro-locked-field .zui-input[disabled],
+.zui-scope.cev-admin .cev-pro-locked-field .zui-textarea[disabled] {
+	opacity: 0.7;
+	cursor: not-allowed;
+	background: #f8fafc;
+}
+
+.zui-scope.cev-admin .cev-pro-locked-field .zui-checkbox__input:disabled + .zui-checkbox__box {
+	opacity: 0.7;
+}
+
+.zui-scope.cev-admin .zui-upsell {
+	margin-block-start: 24px;
+}
+
+/* =====================================================================
+ * Stats line + bulk action toolbar (inside the table card).
+ * ===================================================================== */
+
+.zui-scope.cev-admin .cev-stats-line {
+	margin: 0 0 12px;
+	font-size: 13px;
+	color: #64748b;
+}
+
+.zui-scope.cev-admin .cev-stats-line strong {
+	color: #0f172a;
+	font-weight: 700;
+}
+
+/* The bulk toolbar now lives INSIDE the table card (matches CEV Pro).
+   IMPORTANT: do NOT use `overflow: hidden` here — the per-row kebab
+   actions menu is `position: absolute` and would otherwise be clipped
+   by the card edge and never become visible. */
+.zui-scope.cev-admin .cev-table-card {
+	padding: 0;
+	overflow: visible;
+}
+
+/* `.zui-bulkbar` core + `__group` styling now comes from the library's
+   bulk-bar.css (enqueued as zui-bulk-bar handle). The flex-direction
+   override below stays to defeat the legacy #filterForm column rule. */
+
+/* Soft button variant used for Apply / Export CSV (matches Pro's
+   ghost-button look: subtle blue-tint background, blue text, no harsh
+   border). Pro's CEV bulk bar uses the same `.zui-btn-soft` class. */
+.zui-scope.cev-admin .zui-btn-soft {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: #eef2ff;
+	color: #3b64d3;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	padding: 8px 16px;
+	font-size: 12px;
+	font-weight: 700;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s, border-color 0.15s;
+	box-shadow: none;
+	text-decoration: none;
+	line-height: 1.2;
+}
+
+.zui-scope.cev-admin .zui-btn-soft:hover {
+	background: #dde6ff;
+	color: #2d4faa;
+	border-color: transparent;
+}
+
+.zui-scope.cev-admin .zui-btn-soft svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* `.apply_bulk_action` legacy reset is no longer needed — assets/css/admin.css
+   is no longer enqueued on the CEV admin page, so the legacy solid-blue
+   button styling can't override `.zui-btn-soft` anymore. Library's
+   `bulk-bar.css` now handles all `.zui-bulkbar` layout (flex row, gap,
+   padding, divider). */
+
+/* Select wrap with chevron icon (matches Pro's .zui-select-wrap pattern). */
+.zui-scope.cev-admin .zui-select-wrap {
+	position: relative;
+	display: inline-block;
+}
+
+.zui-scope.cev-admin .zui-select-wrap .zui-select {
+	padding-inline-end: 32px;
+	appearance: none;
+	-webkit-appearance: none;
+}
+
+.zui-scope.cev-admin .zui-select-chevron {
+	position: absolute;
+	inset-inline-end: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: none;
+	color: #94a3b8;
+	display: inline-flex;
+}
+
+.zui-scope.cev-admin .zui-select-chevron svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* =====================================================================
+ * ZUI Table core + DataTables sort-arrow suppression.
+ * ---------------------------------------------------------------------
+ * `.zui-table`, `.zui-table-scroll`, two-line cell support, header/body
+ * cell styling and hover all come from the library's table.css +
+ * datatables.css (enqueued as zui-table / zui-datatables). Only the
+ * CEV-specific column-shrink helpers + sort-arrow kill stay below.
+ * ===================================================================== */
+
+/* Checkbox + actions columns shrink to content. */
+.zui-scope.cev-admin .zui-table .cev-table__check,
+.zui-scope.cev-admin .zui-table .cev-table__actions {
+	width: 1%;
+	white-space: nowrap;
+	text-align: center;
+}
+
+/* DataTables 1.11.5 paints sort-indicator arrows on every <th> via
+   `background-image: url(../images/sort_*.png) !important;`. The image
+   files don't exist at the relative path so they show as broken-image
+   icons (the small purple triangle clusters). Override with
+   `background-image: none !important;` plus also kill any pseudo-element
+   fallback that newer DataTables builds use.
+
+   Applied to both the explicitly-disabled columns (.cev-table__check,
+   .cev-table__actions, .sorting_disabled) AND the entire DataTables
+   theme so the arrows never appear at all on this table. */
+.zui-scope.cev-admin .zui-table thead th.cev-table__check,
+.zui-scope.cev-admin .zui-table thead th.cev-table__actions {
+	cursor: default !important;
+}
+
+.zui-scope.cev-admin table.dataTable thead .sorting,
+.zui-scope.cev-admin table.dataTable thead .sorting_asc,
+.zui-scope.cev-admin table.dataTable thead .sorting_desc,
+.zui-scope.cev-admin table.dataTable thead .sorting_asc_disabled,
+.zui-scope.cev-admin table.dataTable thead .sorting_desc_disabled,
+.zui-scope.cev-admin table.dataTable thead .sorting_disabled,
+.zui-scope.cev-admin .zui-table thead th.cev-table__check,
+.zui-scope.cev-admin .zui-table thead th.cev-table__actions {
+	background-image: none !important;
+}
+
+.zui-scope.cev-admin table.dataTable thead .sorting::before,
+.zui-scope.cev-admin table.dataTable thead .sorting::after,
+.zui-scope.cev-admin table.dataTable thead .sorting_asc::before,
+.zui-scope.cev-admin table.dataTable thead .sorting_asc::after,
+.zui-scope.cev-admin table.dataTable thead .sorting_desc::before,
+.zui-scope.cev-admin table.dataTable thead .sorting_desc::after,
+.zui-scope.cev-admin .zui-table thead th.cev-table__check::before,
+.zui-scope.cev-admin .zui-table thead th.cev-table__check::after,
+.zui-scope.cev-admin .zui-table thead th.cev-table__actions::before,
+.zui-scope.cev-admin .zui-table thead th.cev-table__actions::after,
+.zui-scope.cev-admin .zui-table thead th.sorting_disabled::before,
+.zui-scope.cev-admin .zui-table thead th.sorting_disabled::after {
+	content: none !important;
+	display: none !important;
+	opacity: 0 !important;
+}
+
+/* =====================================================================
+ * Avatar + .zui-cell-user core styling now comes from the library's
+ * avatar.css (enqueued as zui-avatar handle).
+ * Kebab actions menu (.zui-actions / __toggle / __menu / __item) core
+ * styling now comes from the library's actions-menu.css (enqueued as
+ * zui-actions-menu handle).
+ *
+ * Two CEV-specific overrides stay below — defensive z-index boost so
+ * the menu wins the stacking order even when DataTables wraps the
+ * table, and a `[hidden]` enforcement against the `display:flex` set
+ * by the library/JS.
+ * ===================================================================== */
+
+.zui-scope.cev-admin .zui-actions-toggle[aria-expanded="true"] {
+	position: relative;
+	z-index: 9999;
+}
+
+.zui-scope.cev-admin .zui-actions-menu {
+	z-index: 9999;
+}
+
+.zui-scope.cev-admin .zui-actions-menu[hidden] {
+	display: none !important;
+}
+
+/* Inside the unified table card, drop the .zui-table-scroll's own
+   border / radius / shadow (the card supplies them) and let overflow
+   escape so the kebab actions menu isn't clipped at the right edge. */
+.zui-scope.cev-admin .cev-table-card .zui-table-scroll {
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	overflow: visible;
+}
+
+/* Each row needs to allow its kebab menu to escape vertically too. */
+.zui-scope.cev-admin .cev-table-card .zui-table,
+.zui-scope.cev-admin .cev-table-card .zui-table tbody,
+.zui-scope.cev-admin .cev-table-card .zui-table tr,
+.zui-scope.cev-admin .cev-table-card .zui-table td {
+	overflow: visible;
+}
+
+/* Last row's kebab menu would drop below the card — flip it upward. */
+.zui-scope.cev-admin .zui-table tbody tr:last-child .zui-actions-menu,
+.zui-scope.cev-admin .zui-table tbody tr:nth-last-child(2) .zui-actions-menu {
+	top: auto;
+	bottom: calc(100% + 4px);
+}
+
+/* DataTables wrapper (info, paginate, paginate_button) styling now comes
+   from the library's datatables.css (enqueued as zui-datatables handle). */
+
+/* =====================================================================
+ * Empty / placeholder card (no rows yet).
+ * ===================================================================== */
+
+.zui-scope.cev-admin .cev-placeholder {
+	text-align: center;
+	padding: 48px 24px;
+}
+
+.zui-scope.cev-admin .cev-placeholder__title {
+	margin: 0 0 8px;
+	font-size: 15px;
+	font-weight: 700;
+	color: #1e293b;
+}
+
+.zui-scope.cev-admin .cev-placeholder__text {
+	margin: 0 auto;
+	max-width: 420px;
+	font-size: 13px;
+	line-height: 1.55;
+	color: #64748b;
+}
+
+/* =====================================================================
+ * Go Pro tab — ported from the React/Tailwind prototype LicenseTab.
+ * (Hero → comparison table → CTA → add-ons grid.) All cosmetics live
+ * here; the view file emits clean CEV-prefixed markup only.
+ * ===================================================================== */
+
+.zui-scope.cev-admin .cev-gopro {
+	display: flex;
+	flex-direction: column;
+	gap: 40px;
+	padding-block-end: 24px;
+}
+
+/* ─── Hero ─── */
+
+.zui-scope.cev-admin .cev-gopro-hero {
+	text-align: center;
+	padding: 24px 20px 0;
+	max-width: 680px;
+	margin: 0 auto;
+}
+
+.zui-scope.cev-admin .cev-gopro-hero__title {
+	margin: 0 0 12px;
+	font-size: 28px;
+	font-weight: 700;
+	color: #1e293b;
+	line-height: 1.25;
+	letter-spacing: -0.01em;
+}
+
+.zui-scope.cev-admin .cev-gopro-hero__body {
+	margin: 0 auto 24px;
+	max-width: 560px;
+	font-size: 14px;
+	line-height: 1.6;
+	color: #64748b;
+}
+
+.zui-scope.cev-admin .cev-gopro-hero__body strong {
+	font-weight: 600;
+	color: #334155;
+}
+
+.zui-scope.cev-admin .cev-gopro-hero__body a {
+	color: #3b60e4;
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.zui-scope.cev-admin .cev-gopro-hero__body a:hover {
+	text-decoration: underline;
+}
+
+.zui-scope.cev-admin .cev-gopro-hero__btn {
+	display: inline-block;
+	background: #3b60e4;
+	color: #fff;
+	font-size: 13px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	padding: 13px 32px;
+	border-radius: 6px;
+	text-decoration: none;
+	border: 0;
+	cursor: pointer;
+	transition: background 0.15s;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.zui-scope.cev-admin .cev-gopro-hero__btn:hover {
+	background: #2d50d6;
+	color: #fff;
+}
+
+/* ─── Feature comparison table ─── */
+
+.zui-scope.cev-admin .cev-gopro-compare {
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__header,
+.zui-scope.cev-admin .cev-gopro-compare__row {
+	display: grid;
+	grid-template-columns: 1fr 180px 180px;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__header {
+	border-block-end: 1px solid #e2e8f0;
+	background: #fff;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__label {
+	padding: 20px 24px;
+	display: flex;
+	align-items: center;
+	font-size: 13px;
+	font-weight: 700;
+	color: #334155;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__col {
+	padding: 20px 16px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	border-inline-start: 1px solid #f1f5f9;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__col--pro {
+	background: #f8fdfa;
+	border-inline-start: 1px solid #e4f5ed;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__eyebrow {
+	display: block;
+	font-size: 10px;
+	font-weight: 700;
+	color: #94a3b8;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	margin-bottom: 4px;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__badge {
+	display: inline-block;
+	background: #21a868;
+	color: #fff;
+	font-size: 9px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	padding: 3px 8px;
+	border-radius: 4px;
+	margin-bottom: 4px;
+	box-shadow: 0 1px 2px rgba(33, 168, 104, 0.25);
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__title {
+	display: block;
+	font-size: 14px;
+	font-weight: 700;
+	color: #1e293b;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__row {
+	border-block-start: 1px solid #f1f5f9;
+	transition: background 0.15s;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__row:hover {
+	background: #f8fafc;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__row:hover .cev-gopro-compare__cell--pro {
+	background: #f3fbf6;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__feature {
+	padding: 20px 24px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-width: 0;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__feature strong {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	font-size: 14px;
+	font-weight: 700;
+	color: #1e293b;
+	margin-bottom: 4px;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__feature span {
+	font-size: 13px;
+	color: #64748b;
+	line-height: 1.5;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__cell {
+	padding: 20px 16px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	text-align: center;
+	border-inline-start: 1px solid #f1f5f9;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__cell--pro {
+	background: #f8fdfa;
+	border-inline-start: 1px solid #e4f5ed;
+}
+
+/* Circle icon badges inside cells. */
+.zui-scope.cev-admin .cev-gopro-compare__dot {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__dot svg {
+	width: 14px;
+	height: 14px;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__dot--check {
+	background: #dcfce7;
+	color: #16a34a;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__dot--pro {
+	border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__dot--x {
+	background: #64748b;
+	color: #fff;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__status {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	line-height: 1.2;
+	max-width: 140px;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__status--muted {
+	color: #94a3b8;
+}
+
+.zui-scope.cev-admin .cev-gopro-compare__status--pro {
+	color: #21a868;
+}
+
+/* NEW pill that sits next to a feature title. */
+.zui-scope.cev-admin .cev-gopro-new {
+	display: inline-block;
+	background: #ede9fe;
+	color: #6d28d9;
+	font-size: 9px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	padding: 2px 6px;
+	border-radius: 3px;
+	line-height: 1.2;
+}
+
+/* ─── Bottom CTA ─── */
+
+.zui-scope.cev-admin .cev-gopro-bottom-cta {
+	text-align: center;
+	padding: 8px 0;
+}
+
+.zui-scope.cev-admin .cev-gopro-bottom-cta__note {
+	margin: 12px 0 0;
+	font-size: 13px;
+	color: #94a3b8;
+}
+
+/* ─── Add-ons grid ───
+ * The ecosystem grid now uses the shared library's .zui-lic-eco +
+ * .zui-lic-plugin components (same design as CEV Pro's License tab).
+ * All styling comes from assets/zui/css/components/lic-eco.css and
+ * lic-plugin.css — no plugin-side overrides needed.
+ *
+ * The only thing kept below is the narrow-viewport breakpoint for
+ * the Feature Comparison table; that's not related to add-ons but
+ * was nested in the old @media query.
+ */
+
+@media (max-width: 680px) {
+	.zui-scope.cev-admin .cev-gopro-compare__header,
+	.zui-scope.cev-admin .cev-gopro-compare__row {
+		grid-template-columns: 1fr 110px 110px;
+	}
+	.zui-scope.cev-admin .cev-gopro-compare__feature,
+	.zui-scope.cev-admin .cev-gopro-compare__cell,
+	.zui-scope.cev-admin .cev-gopro-compare__col {
+		padding: 14px 10px;
+	}
+}
+
+/* =====================================================================
+ * Unverified Users — Pro design parity overrides.
+ * ---------------------------------------------------------------------
+ * Exact values pulled from the CEV Pro live demo. These rules sit at
+ * the END of the file so they win the cascade over any earlier .zui-table
+ * / .zui-cell-user / .zui-avatar / .zui-actions* rules. Markup + JS are
+ * untouched — only visuals change.
+ * ===================================================================== */
+
+/* CARD */
+.zui-scope.cev-admin .zui-card {
+	background: #ffffff;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.08);
+	padding: 0;
+}
+
+/* TABLE */
+.zui-scope.cev-admin #userLogTable {
+	background: #ffffff;
+	color: #1e293b;
+	font-size: 14px;
+}
+
+/* HEADER — left aligned, light gray, semi-bold, uppercase */
+.zui-scope.cev-admin #userLogTable thead th {
+	padding: 16px;
+	text-align: left;
+	color: #94a3b8;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.44px;
+	border-bottom: 1px solid #e2e8f0;
+	background: #ffffff;
+}
+
+/* BODY CELLS — even 16px padding, NO row divider line */
+.zui-scope.cev-admin #userLogTable tbody td {
+	padding: 16px;
+	vertical-align: middle;
+	border-bottom: none;
+}
+
+/* ROW HOVER */
+.zui-scope.cev-admin #userLogTable tbody tr:hover td {
+	background: #fafbfc;
+}
+
+/* AVATAR — teal circle */
+.zui-scope.cev-admin .zui-avatar {
+	width: 36px;
+	height: 36px;
+	border-radius: 999px;
+	background: #0891b2;
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* USER CELL (avatar + name/email) */
+.zui-scope.cev-admin .zui-cell-user {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.zui-scope.cev-admin .zui-cell-user__meta {
+	display: flex;
+	flex-direction: column;
+}
+
+.zui-scope.cev-admin .zui-cell-user__meta strong {
+	font-size: 14px;
+	font-weight: 600;
+	color: #1e293b;
+	line-height: 1.45;
+}
+
+.zui-scope.cev-admin .zui-cell-user__meta small {
+	font-size: 12px;
+	color: #94a3b8;
+}
+
+/* LAST UPDATED cell — relative time on top, absolute date below */
+.zui-scope.cev-admin #userLogTable tbody td:nth-child(3) strong {
+	font-size: 14px;
+	font-weight: 600;
+	color: #1e293b;
+}
+
+.zui-scope.cev-admin #userLogTable tbody td:nth-child(3) small {
+	font-size: 12px;
+	color: #94a3b8;
+}
+
+/* ACTIONS — 3-dot toggle */
+.zui-scope.cev-admin .zui-actions-toggle {
+	width: 30px;
+	height: 30px;
+	border-radius: 8px;
+	background: transparent;
+	border: none;
+	color: #94a3b8;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.zui-scope.cev-admin .zui-actions-toggle:hover {
+	background: #f1f5f9;
+	color: #475569;
+}
+
+.zui-scope.cev-admin .zui-actions-toggle svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* ACTIONS — dropdown menu */
+.zui-scope.cev-admin .zui-actions-menu {
+	position: absolute;
+	min-width: 160px;
+	background: #ffffff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	box-shadow: 0 4px 10px 0 rgba(15, 23, 42, 0.1);
+	padding: 0;
+	overflow: hidden;
+}
+
+.zui-scope.cev-admin .zui-actions-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 12px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #475569;
+	background: transparent;
+	border: none;
+	text-align: left;
+	cursor: pointer;
+}
+
+.zui-scope.cev-admin .zui-actions-item:hover {
+	background: #f8fafc;
+}
+
+.zui-scope.cev-admin .zui-actions-item--danger {
+	color: #e11d48;
+}
+
+.zui-scope.cev-admin .zui-actions-item--danger:hover {
+	background: #fef2f2;
+}
+
+/* CHECKBOX */
+.zui-scope.cev-admin .zui-checkbox__box {
+	width: 18px;
+	height: 18px;
+	border: 1px solid #94a3b8;
+	border-radius: 6px;
+	background: #ffffff;
+}

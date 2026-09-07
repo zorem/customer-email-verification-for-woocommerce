@@ -190,7 +190,7 @@ class Cev_Verification_Widget_Message {
 		);
 		$wp_customize->add_control( 'cev_verification_message',
 			array(
-				'label' => __( 'Message', 'customer-email-verification-pro' ),
+				'label' => __( 'Message', 'customer-email-verification-for-woocommerce' ),
 				'description' => '',
 				'section' => 'cev_verification_widget_messages',
 				'type' => 'textarea',

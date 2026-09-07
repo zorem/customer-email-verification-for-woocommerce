@@ -3,8 +3,8 @@ Contributors: zorem,gaurav1092,eranzorem,yashpatel1007
 Tags: woocommerce, email address verification, customer verification, registration verification, woocommerce signup spam
 Requires at least: 5.3
 Requires PHP: 7.2
-Tested up to: 6.9.4
-Stable tag: 2.7
+Tested up to: 7.0
+Stable tag: 2.8
 License: GPLv2 
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -77,6 +77,12 @@ Explore more at [zorem.com](https://www.zorem.com/)
 
 
 == Changelog ==
+= 2.8 =
+* Fix - Undefined variable $expire_time
+* Improvement - Redesigned the entire admin experience with the new Zorem UI design system (ZUI).
+* Dev - Added a compatibility with WooCommerce 10.9.1
+* Dev - Added a compatibility with WordPress 7.0
+
 = 2.7 =
 * Dev - Added a compatibility with WooCommerce 10.7.0
 * Dev - Added a compatibility with WordPress 6.9.4

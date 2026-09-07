@@ -1,0 +1,55 @@
+/* ============================================================
+   Zorem UI — Meter (labeled progress bar)
+   ------------------------------------------------------------
+   A single labeled horizontal bar with a value caption. Used for
+   funnels, status breakdowns, quota usage, etc. Bar width is set
+   inline by the consumer (style="width:67%").
+
+   Markup:
+     <div class="zui-meter">
+       <div class="zui-meter__label">Code verified</div>
+       <div class="zui-meter__track">
+         <div class="zui-meter__bar zui-meter__bar--success" style="width:67%"></div>
+       </div>
+       <div class="zui-meter__value">3 (67%)</div>
+     </div>
+
+   Phase: 1 (added v1.1.0)
+   ============================================================ */
+
+.zui-scope .zui-meter + .zui-meter {
+	margin-block-start: 16px;
+}
+
+.zui-scope .zui-meter__label {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--zui-text);
+	margin-block-end: 8px;
+}
+
+.zui-scope .zui-meter__track {
+	height: 8px;
+	border-radius: 999px;
+	background: var(--zui-divider);
+	overflow: hidden;
+}
+
+.zui-scope .zui-meter__bar {
+	height: 100%;
+	border-radius: 999px;
+	background: var(--zui-primary);
+	transition: width var(--zui-dur) var(--zui-ease);
+}
+
+.zui-scope .zui-meter__bar--success { background: var(--zui-success); }
+.zui-scope .zui-meter__bar--warning { background: var(--zui-warning); }
+.zui-scope .zui-meter__bar--danger  { background: var(--zui-danger); }
+.zui-scope .zui-meter__bar--muted   { background: var(--zui-border); }
+
+.zui-scope .zui-meter__value {
+	margin-block-start: 4px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--zui-text-soft);
+}

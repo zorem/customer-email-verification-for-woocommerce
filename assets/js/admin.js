@@ -1,11 +1,41 @@
-/* zorem_snackbar jquery */
+/* zorem_snackbar jQuery shim — delegates to the shared Zorem UI library's
+   ZUI.snackbar() API (assets/zui/js/zui.js) when available. Existing call
+   sites (`.zorem_snackbar(msg)` / `.zorem_snackbar_warning(msg)`) keep
+   working unchanged; they just render as the library's glassmorphic
+   floating pill instead of the old inline div. Falls back to the legacy
+   inline toast only when the library isn't deployed. */
 (function( $ ){
-	$.fn.zorem_snackbar = function(msg) {
-		var zorem_snackbar = $("<div></div>").addClass('zorem_snackbar show_snackbar').text( msg );
-		$("body").append(zorem_snackbar);
 
-		setTimeout(function(){ zorem_snackbar.remove(); }, 3000);
+	function cevFallbackToast( msg, variant ) {
+		var cls = 'zorem_snackbar show_snackbar';
+		if ( 'warning' === variant || 'error' === variant ) {
+			cls += ' zorem_snackbar_warning';
+		}
+		var $t = $( '<div></div>' ).addClass( cls ).text( msg );
+		$( 'body' ).append( $t );
+		setTimeout( function () { $t.remove(); }, 3000 );
+	}
 
+	function cevToast( msg, type ) {
+		if ( window.ZUI && typeof window.ZUI.snackbar === 'function' ) {
+			window.ZUI.snackbar( msg, { type: type } );
+		} else {
+			cevFallbackToast( msg, type );
+		}
+	}
+
+	$.fn.zorem_snackbar = function ( msg ) {
+		cevToast( msg, 'success' );
+		return this;
+	};
+
+	$.fn.zorem_snackbar_warning = function ( msg ) {
+		cevToast( msg, 'error' );
+		return this;
+	};
+
+	$.fn.zorem_snackbar_info = function ( msg ) {
+		cevToast( msg, 'info' );
 		return this;
 	};
 })( jQuery );
@@ -50,20 +80,37 @@ jQuery(document).on("change", "#cev_enable_email_verification", function(){
 })( jQuery );
 
 jQuery(document).on("click", ".cev_settings_save", function(){
-	
-	var form = jQuery("#cev_settings_form");	
-	
+
+	var btn  = this;
+	var form = jQuery("#cev_settings_form");
+
+	/* Library save-button loading state (assets/zui/js/zui.js).
+	   ZUI.btnSaving() adds .is-saving + swaps the label to "Saving…"
+	   and disables pointer events; ZUI.btnReset() restores the
+	   original label on completion. No-ops if the library isn't
+	   deployed — the AJAX still runs the same. */
+	if ( window.ZUI && typeof window.ZUI.btnSaving === 'function' ) {
+		window.ZUI.btnSaving( btn );
+	}
+
 	jQuery.ajax({
 		url: ajaxurl,
 		data: form.serialize(),
 		type: 'POST',
-		dataType:"json",	
-		success: function() {	
+		dataType:"json",
+		success: function() {
 			form.find(".spinner").removeClass("active");
+			if ( window.ZUI && typeof window.ZUI.btnReset === 'function' ) {
+				window.ZUI.btnReset( btn );
+			}
 			jQuery("#cev_settings_form").zorem_snackbar( 'Your Settings have been successfully saved.' );
 		},
 		error: function(response) {
-			console.log(response);			
+			console.log(response);
+			if ( window.ZUI && typeof window.ZUI.btnReset === 'function' ) {
+				window.ZUI.btnReset( btn );
+			}
+			jQuery.fn.zorem_snackbar_warning( 'Failed to save settings.' );
 		}
 	});
 	return false;
@@ -187,52 +234,68 @@ jQuery( document ).on( "click", ".close_btn", function() {
 });
 
   var table; // Define the DataTable variable
-  jQuery(document).ready(function() {
-	  var table = jQuery('#userLogTable').DataTable({
+
+  // Idempotent DataTable init for #userLogTable. Exposed on window so the
+  // tab switcher can re-init when the Unverified Users tab is shown after
+  // the table was rendered inside a `[hidden]` panel (DataTables can't
+  // compute column widths against a zero-width bounding box, so we
+  // destroy + reinit once the panel is on screen).
+  window.cevInitUserLogTable = function () {
+	  var $tbl = jQuery('#userLogTable');
+	  if (!$tbl.length) { return null; }
+	  if (jQuery.fn.DataTable.isDataTable($tbl)) {
+		  $tbl.DataTable().destroy();
+	  }
+	  return $tbl.DataTable({
 		  searching: false,
 		  lengthChange: false,
-		  pageLength: 50, // Show only five entries per page
+		  pageLength: 50,
+		  autoWidth: false,
 		  columnDefs: [
-			  { 
-				  orderable: false, 
-				  targets: [0, 1, 2, 3] // Disable sorting on these columns
-			  },
-			  { 
-				  width: '20px',
-				  orderable: false, 
-				  targets: 0 // Set width for the first column
-			  },
-			  { 
-				  className: 'text-right', 
-				  targets: -1 // Align the last column to the right
+			  {
+				  orderable: false,
+				  targets: [0, 1, 2, 3]
 			  },
 			  {
-				  targets: '_all', // Apply to all columns
+				  width: '20px',
+				  orderable: false,
+				  targets: 0
+			  },
+			  {
+				  className: 'text-right',
+				  targets: -1
+			  },
+			  {
+				  targets: '_all',
 				  createdCell: function (td, cellData, rowData, row, col) {
 					  if (col === 3) {
 						  jQuery(td).css('text-align', 'right');
 					  }
-					  if (row === 0) { // Target only header cells
+					  if (row === 0) {
 						  if (col === 0) {
 							  jQuery(td).css('width', '20px');
-						  }  else {
+						  } else {
 							  jQuery(td).css('width', '300px');
 						  }
 					  }
 				  }
 			  }
 		  ],
-		  rowCallback: function(row, data, index) {
+		  rowCallback: function (row, data, index) {
 			  jQuery(row).hover(
-				  function() {
+				  function () {
 					  jQuery(this).addClass('hover-row');
 				  },
-				  function() {
+				  function () {
 					  jQuery(this).removeClass('hover-row');
 				  }
 			  );
 		  }
 	  });
+  };
+
+  jQuery(document).ready(function() {
+	  var table = window.cevInitUserLogTable();
 	  
 	  
 	  jQuery(document).on("click", ".cev_tab_input", function(){
@@ -243,12 +306,15 @@ jQuery( document ).on( "click", ".close_btn", function() {
 		  
 	  });
   
-	  document.getElementById('select_all').addEventListener('click', function() {
-		  var checkboxes = document.querySelectorAll('.row_checkbox');
-		  for (var checkbox of checkboxes) {
-			  checkbox.checked = this.checked;
-		  }
-	  });
+	  var selectAllChk = document.getElementById('select_all');
+	  if ( selectAllChk ) {
+		  selectAllChk.addEventListener('click', function() {
+			  var checkboxes = document.querySelectorAll('.row_checkbox');
+			  for (var checkbox of checkboxes) {
+				  checkbox.checked = this.checked;
+			  }
+		  });
+	  }
   
 	  jQuery('.apply_bulk_action').on('click', function() {
 		  var action = jQuery('#bulk_action').val();
@@ -287,7 +353,7 @@ jQuery( document ).on( "click", ".close_btn", function() {
 					  });
 				  }
 			  } else {
-				  alert('No users selected for deletion');
+				  jQuery.fn.zorem_snackbar_warning('No users selected for deletion');
 			  }
 		  }
 	  });
@@ -328,17 +394,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const menuButton = document.querySelector('.menu-button');
     const popupMenu = document.querySelector('.popup-menu');
 
-    // Toggle menu visibility on button click
-    menuButton.addEventListener('click', () => {
-        popupMenu.style.display = popupMenu.style.display === 'block' ? 'none' : 'block';
-    });
+    if ( menuButton && popupMenu ) {
+        menuButton.addEventListener('click', () => {
+            popupMenu.style.display = popupMenu.style.display === 'block' ? 'none' : 'block';
+        });
 
-    // Close menu when clicking outside of it
-    document.addEventListener('click', (e) => {
-        if (!menuButton.contains(e.target) && !popupMenu.contains(e.target)) {
-            popupMenu.style.display = 'none';
-        }
-    });
+        document.addEventListener('click', (e) => {
+            if (!menuButton.contains(e.target) && !popupMenu.contains(e.target)) {
+                popupMenu.style.display = 'none';
+            }
+        });
+    }
 });
 
 
