@@ -31,6 +31,7 @@
 			this._wireShell( root );
 			this._wireMultiselect( root );
 			this._wireLicense( root );
+			this._wireAccordions( root );
 		},
 
 		snackbar: function ( message, opts ) {
@@ -118,6 +119,12 @@
 		slideout: {
 			open:  function ( id ) { _toggleOverlay( id, true,  'zui-slideout-open' ); },
 			close: function ( id ) { _toggleOverlay( id, false, 'zui-slideout-open' ); },
+		},
+
+		accordion: {
+			open:   function ( item ) { _setAccordionOpen( item, true ); },
+			close:  function ( item ) { _setAccordionOpen( item, false ); },
+			toggle: function ( item ) { _setAccordionOpen( item, ! item.classList.contains( 'is-open' ) ); },
 		},
 
 		/**
@@ -321,6 +328,42 @@
 				if ( scope ) { scope.classList.remove( 'zui-sidebar-open' ); }
 			} );
 		},
+		/**
+		 * Accordion — click on `.zui-accordion__head` toggles `.is-open` on
+		 * its parent `.zui-accordion__item`, flips `body.hidden`, sets
+		 * `aria-expanded`. If the parent `.zui-accordion` carries the
+		 * `--single` modifier, opening one item closes all siblings.
+		 * Clicks that originate on a form control (input, select, textarea,
+		 * or a `.zui-toggle` widget) are ignored so those controls can
+		 * operate without triggering expand/collapse.
+		 * Items with `[data-zui-accordion-default-open]` are opened on init.
+		 * Fires `zui:accordiontoggle` on the item (bubbles, detail: { open }).
+		 */
+		_wireAccordions: function ( root ) {
+			root = root || document;
+
+			_delegateClick( root, '.zui-accordion__head', function ( head, ev ) {
+				// Skip if the click was inside a form control living in the head
+				// (e.g. an inline toggle). Those controls handle their own events.
+				if ( ev.target.closest( '.zui-toggle, input, select, textarea, [data-zui-accordion-ignore]' ) ) {
+					return;
+				}
+				var item = head.closest( '.zui-accordion__item' );
+				if ( ! item ) { return; }
+				_setAccordionOpen( item, ! item.classList.contains( 'is-open' ) );
+			} );
+
+			// Default-open pass — one-shot per item.
+			Array.prototype.forEach.call(
+				root.querySelectorAll( '.zui-accordion__item[data-zui-accordion-default-open]' ),
+				function ( item ) {
+					if ( item._zuiAccordionInit ) { return; }
+					item._zuiAccordionInit = true;
+					_setAccordionOpen( item, true );
+				}
+			);
+		},
+
 		_wireMultiselect: function ( root ) {
 			root = root || document;
 			Array.prototype.forEach.call(
@@ -582,6 +625,32 @@
 
 		renderChips();
 		renderDropdown();
+	}
+
+	function _setAccordionOpen ( item, open ) {
+		if ( ! item ) { return; }
+		var head = item.querySelector( ':scope > .zui-accordion__head' );
+		var body = item.querySelector( ':scope > .zui-accordion__body' );
+		if ( ! head || ! body ) { return; }
+
+		// Single-open mode: close every sibling before opening this one.
+		if ( open ) {
+			var container = item.closest( '.zui-accordion' );
+			if ( container && container.classList.contains( 'zui-accordion--single' ) ) {
+				Array.prototype.forEach.call(
+					container.querySelectorAll( ':scope > .zui-accordion__item.is-open' ),
+					function ( sib ) { if ( sib !== item ) { _setAccordionOpen( sib, false ); } }
+				);
+			}
+		}
+
+		item.classList.toggle( 'is-open', open );
+		body.hidden = ! open;
+		head.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+		item.dispatchEvent( new CustomEvent( 'zui:accordiontoggle', {
+			bubbles: true,
+			detail: { open: open },
+		} ) );
 	}
 
 	function _toggleOverlay ( id, show, bodyClass ) {

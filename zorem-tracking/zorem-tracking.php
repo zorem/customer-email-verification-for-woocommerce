@@ -84,7 +84,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 		public function enqueue_plugin_styles() {
 			// Enqueue your CSS file
 			wp_enqueue_style('plugin-css', plugin_dir_url(__FILE__) . 'assets/css/style.css', array(), time());
-			wp_enqueue_script('plugin-js', plugin_dir_url(__FILE__) . 'assets/js/main.js', array(), time());
+			wp_enqueue_script('plugin-js', plugin_dir_url(__FILE__) . 'assets/js/main.js', array(), time(), true);
 			 
 			wp_localize_script('plugin-js', 'zorem_tracking_data', [
 				'plugin_slug_with_hyphens' => $this->plugin_slug_with_hyphens,
@@ -92,8 +92,12 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			
 		}
 		public function load_admin_page() {
-		
-			if (isset($_GET['page']) && $_GET['page'] === $this->menu_slug) {
+
+			// Read-only check of which admin screen we are on, not form processing.
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+			$cev_current_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+
+			if ( $cev_current_page === $this->menu_slug ) {
 				if (!get_option($this->plugin_slug_with_hyphens . '_usage_data_selector')) {
 					
 					$this->usage_data_signup_box();
@@ -112,17 +116,26 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			// Read before saving so we can detect a first-time opt-in.
 			$was_already_opted_in = (bool) get_option( $this->plugin_slug_with_hyphens . '_optin_confirmation_sent', false );
 
-			if ( isset( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] ) && 0 == $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] && isset( $_POST[ 	$this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) && 0 == $_POST[ $this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) {
+			$optin_key = $this->plugin_slug_with_hyphens . '_optin_email_notification';
+			$usage_key = $this->plugin_slug_with_hyphens . '_enable_usage_data';
+
+			// Nonce already verified by check_ajax_referer() above.
+			$optin_set  = isset( $_POST[ $optin_key ] );
+			$usage_set  = isset( $_POST[ $usage_key ] );
+			$optin_flag = $optin_set ? sanitize_text_field( wp_unslash( $_POST[ $optin_key ] ) ) : '';
+			$usage_flag = $usage_set ? sanitize_text_field( wp_unslash( $_POST[ $usage_key ] ) ) : '';
+
+			if ( $optin_set && 0 == $optin_flag && $usage_set && 0 == $usage_flag ) {
 				update_option( $this->plugin_slug_with_hyphens . '_usage_data_selector', true );
 				die();
 			}
 
-			if ( isset( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] ) ) {
-				update_option( $this->plugin_slug_with_hyphens . '_optin_email_notification', wc_clean( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] ) );
+			if ( $optin_set ) {
+				update_option( $optin_key, $optin_flag );
 			}
 
-			if ( isset( $_POST[ $this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) ) {
-				update_option( $this->plugin_slug_with_hyphens . '_enable_usage_data', wc_clean( $_POST[ $this->plugin_slug_with_hyphens . '_enable_usage_data' ] ) );
+			if ( $usage_set ) {
+				update_option( $usage_key, $usage_flag );
 			}
 
 			$this->set_unset_usage_data_cron();
@@ -130,9 +143,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			update_option( $this->plugin_slug_with_hyphens . '_usage_data_selector', true );
 
 			// Send one-time opt-in confirmation email.
-			$new_optin = isset( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] )
-				? (int) wc_clean( $_POST[ $this->plugin_slug_with_hyphens . '_optin_email_notification' ] )
-				: 0;
+			$new_optin = $optin_set ? (int) $optin_flag : 0;
 
 
 			if ( 1 === $new_optin && ! $was_already_opted_in ) {
@@ -243,6 +254,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 				$data['country'] = WC()->countries->get_base_country();
 
 				$data['order'] = $this->get_order_revenue();
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Hook owned by the shared zorem-tracking SDK, not by this plugin.
 				$data['settings'] = apply_filters( 'get_settings_data', $this->option_prefix);
 				// $data['net_revenue_twelve'] = $order_revenue_data['net_revenue_twelve'];
 				// $data['orders_count_twelve'] = $order_revenue_data['orders_count_twelve'];
@@ -252,6 +264,7 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 				// $data['net_revenue_three'] = $order_revenue_data['net_revenue_three'];
 				
 			}
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Hook owned by the shared zorem-tracking SDK, not by this plugin.
 			$data = apply_filters( 'zorem_tracking_data', $data);
 			return $data;
 		}
@@ -362,18 +375,18 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			foreach ( $plugins as $k => $v ) {
 				// Take care of formatting the data how we want it.
 				$formatted         = array();
-				$formatted['name'] = strip_tags( $v['Name'] );
+				$formatted['name'] = wp_strip_all_tags( $v['Name'] );
 				if ( isset( $v['Version'] ) ) {
-					$formatted['version'] = strip_tags( $v['Version'] );
+					$formatted['version'] = wp_strip_all_tags( $v['Version'] );
 				}
 				if ( isset( $v['Author'] ) ) {
-					$formatted['author'] = strip_tags( $v['Author'] );
+					$formatted['author'] = wp_strip_all_tags( $v['Author'] );
 				}
 				if ( isset( $v['Network'] ) ) {
-					$formatted['network'] = strip_tags( $v['Network'] );
+					$formatted['network'] = wp_strip_all_tags( $v['Network'] );
 				}
 				if ( isset( $v['PluginURI'] ) ) {
-					$formatted['plugin_uri'] = strip_tags( $v['PluginURI'] );
+					$formatted['plugin_uri'] = wp_strip_all_tags( $v['PluginURI'] );
 				}
 				if ( in_array( $k, $active_plugins_keys ) ) {
 					// Remove active plugins from list so we can show active and inactive separately.
@@ -403,7 +416,9 @@ if ( !class_exists( 'WC_Trackers' ) ) {
 			foreach ( $shipping_methods as $id => $shipping_method ) {
 				if ( isset( $shipping_method->enabled ) && 'yes' === $shipping_method->enabled ) {
 					
+					// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 					$shipping_stats = $wpdb->get_row( $wpdb->prepare( "SELECT FLOOR( SUM(total_sales) ) as revenue, COUNT(*) as orders, SUM(shipping_total) as shipping_charge FROM {$wpdb->prefix}wc_order_stats as stats 	LEFT JOIN {$wpdb->prefix}woocommerce_order_items as order_items ON(stats.order_id = order_items.order_id) WHERE order_items.order_item_name = %s", $shipping_method->method_title ) );
+					// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 					
 					//echo '<pre>';print_r($results);echo '</pre>';exit;
 					$active_methods[ $id ] = array(

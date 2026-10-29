@@ -5,19 +5,43 @@
  * Single source of truth for the "Fulfillment Workflow Platform Ecosystem"
  * card grid rendered on every Zorem plugin's License tab. A consumer plugin
  * gets the array by calling
- * `zui_get_ecosystem_plugins( plugin_basename( $main_file ) )`; if the
- * current plugin's slug matches a registered entry it is auto-hidden so
- * a plugin never advertises itself in its own ecosystem grid.
+ * `\Zorem\UI\get_ecosystem_plugins( plugin_basename( $main_file ) )`;
+ * if the current plugin's slug matches a registered entry it is auto-
+ * hidden so a plugin never advertises itself in its own ecosystem grid.
+ *
+ * Since 1.9.2 the resolver lives in the `Zorem\UI` namespace (was global
+ * `zui_get_ecosystem_plugins()`). Consumer templates must update call
+ * sites; there is no backward-compat shim.
+ *
+ * i18n contract (since 1.9.2):
+ *   This registry returns RAW English strings for `name`, `desc`, `badge`,
+ *   and `stat`. The library does NOT call `__()` on any string because it
+ *   is shipped inside multiple consumer plugins, each with a different
+ *   text domain — hardcoding one text domain here produced
+ *   `WordPress.WP.I18n.TextDomainMismatch` PHPCS errors in every consumer.
+ *
+ *   Consumer plugins that need localised copy should either:
+ *     (a) render the values as-is (English fallback, zero PHPCS noise), or
+ *     (b) maintain a per-plugin map from the library's English keys to
+ *         their own literal `__( '…', 'their-textdomain' )` calls.
+ *
+ *   Rationale: attempting to wrap the returned values at the render site
+ *   with a variable text domain triggers
+ *   `WordPress.WP.I18n.NonSingularStringLiteralDomain`, so the library
+ *   deliberately leaves i18n to the caller rather than pretending to
+ *   solve it.
  *
  * @package Zorem_UI
  * @since   1.6.0
  */
 
+namespace Zorem\UI;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
+if ( ! function_exists( __NAMESPACE__ . '\\get_ecosystem_plugins' ) ) {
 	/**
 	 * Return the ordered ecosystem-plugin list for the License tab grid.
 	 *
@@ -33,7 +57,7 @@ if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
 	 *                             plugin doesn't advertise itself.
 	 * @return array Numerically-indexed list of plugin entries.
 	 */
-	function zui_get_ecosystem_plugins( $current_slug = '' ) {
+	function get_ecosystem_plugins( $current_slug = '' ) {
 		$images_url = plugin_dir_url( __FILE__ ) . 'images/eco/';
 		$utm_source = '' !== $current_slug ? strstr( $current_slug, '/', true ) : 'zorem';
 		$utm_suffix = '?utm_source=' . rawurlencode( $utm_source ) . '&utm_medium=license-page&utm_campaign=ecosystem';
@@ -46,9 +70,9 @@ if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
 				'logo'   => $images_url . 'trackship.png',
 				'accent' => '#0d9488',
 				'tint'   => '#CCFBF1',
-				'desc'   => __( 'Take control of your post-shipping workflows, reduce customer service overhead and provide a premium post-purchase tracking experience directly inside WooCommerce. Keeps your tracking data up-to-date and sends automated status changes automatically.', 'zorem-ui' ),
+				'desc'   => 'Take control of your post-shipping workflows, reduce customer service overhead and provide a premium post-purchase tracking experience directly inside WooCommerce. Keeps your tracking data up-to-date and sends automated status changes automatically.',
 				'url'    => 'https://wordpress.org/plugins/trackship-for-woocommerce/',
-				'badge'  => __( 'Recommended', 'zorem-ui' ),
+				'badge'  => 'Recommended',
 				'stat'   => '6,000+ active stores',
 			),
 			'sms-for-woocommerce/sms-for-woocommerce.php' => array(
@@ -58,7 +82,7 @@ if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
 				'logo'   => '',
 				'accent' => '#2563EB',
 				'tint'   => '#DBEAFE',
-				'desc'   => __( 'Keep your shoppers perfectly aligned and updated with lightning fast automated SMS notifications for status updates, dispatched parcels, custom notes, and imminent local drop-offs. Integrates seamlessly with domestic and international gateways.', 'zorem-ui' ),
+				'desc'   => 'Keep your shoppers perfectly aligned and updated with lightning fast automated SMS notifications for status updates, dispatched parcels, custom notes, and imminent local drop-offs. Integrates seamlessly with domestic and international gateways.',
 				'url'    => 'https://www.zorem.com/product/sms-for-woocommerce/',
 				'badge'  => '',
 				'stat'   => '6k+ stores',
@@ -70,7 +94,7 @@ if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
 				'logo'   => '',
 				'accent' => '#16A34A',
 				'tint'   => '#DCFCE7',
-				'desc'   => __( 'Supercharge pickup schedules, offer precise contact-free local pickup times, assign inventory reserves across dynamic multiple regional coordinates, configure localized discounts and split operational hours effortlessly.', 'zorem-ui' ),
+				'desc'   => 'Supercharge pickup schedules, offer precise contact-free local pickup times, assign inventory reserves across dynamic multiple regional coordinates, configure localized discounts and split operational hours effortlessly.',
 				'url'    => 'https://www.zorem.com/product/zorem-local-pickup-pro/',
 				'badge'  => '',
 				'stat'   => '4k+ stores',
@@ -82,7 +106,7 @@ if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
 				'logo'   => '',
 				'accent' => '#EA580C',
 				'tint'   => '#FFEDD5',
-				'desc'   => __( 'Control catalog visibility dynamically. Use safe IP geolocation heuristics to easily allow, restrict, or filter selected product availability across specific global geo environments and border codes.', 'zorem-ui' ),
+				'desc'   => 'Control catalog visibility dynamically. Use safe IP geolocation heuristics to easily allow, restrict, or filter selected product availability across specific global geo environments and border codes.',
 				'url'    => 'https://www.zorem.com/product/country-based-restriction-pro/',
 				'badge'  => '',
 				'stat'   => '3k+ active',
@@ -94,9 +118,9 @@ if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
 				'logo'   => '',
 				'accent' => '#DC2626',
 				'tint'   => '#FEE2E2',
-				'desc'   => __( 'Block dummy checkouts, malicious registration scripts and spam sign-up queues by requiring multi-step verification code validation before customers complete purchases or establish accounts.', 'zorem-ui' ),
+				'desc'   => 'Block dummy checkouts, malicious registration scripts and spam sign-up queues by requiring multi-step verification code validation before customers complete purchases or establish accounts.',
 				'url'    => 'https://www.zorem.com/product/customer-email-verification/',
-				'badge'  => __( 'Highly Rated', 'zorem-ui' ),
+				'badge'  => 'Highly Rated',
 				'stat'   => '11k+ stores',
 			),
 			'sales-report-email-pro/sales-report-email-pro.php' => array(
@@ -106,7 +130,7 @@ if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
 				'logo'   => '',
 				'accent' => '#9333EA',
 				'tint'   => '#F3E8FF',
-				'desc'   => __( 'Receive high-fidelity operational digests directly in your inbox. Deliver elegant daily, weekly or custom periodic sales charts, average cart tracking metrics and order analytics on auto-pilot.', 'zorem-ui' ),
+				'desc'   => 'Receive high-fidelity operational digests directly in your inbox. Deliver elegant daily, weekly or custom periodic sales charts, average cart tracking metrics and order analytics on auto-pilot.',
 				'url'    => 'https://www.zorem.com/product/woocommerce-sales-report-email-pro/',
 				'badge'  => '',
 				'stat'   => '2k+ stores',
@@ -127,7 +151,7 @@ if ( ! function_exists( 'zui_get_ecosystem_plugins' ) ) {
 			// store" badge. The caller's own plugin is unset just below so we
 			// never mark the host plugin as active in its own grid.
 			if ( is_plugin_active( $key ) ) {
-				$plugins[ $key ]['stat'] = __( 'Active in this store', 'zorem-ui' );
+				$plugins[ $key ]['stat'] = 'Active in this store';
 			}
 		}
 

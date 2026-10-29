@@ -1,6 +1,10 @@
 /*
  * Customizer Scripts
- * Need to rewrite and clean up this file.
+ *
+ * Opening a CEV section switches the preview to that section's page. It no
+ * longer clicks Publish: WordPress carries unsaved changes across preview
+ * pages, and auto-publishing made half-finished edits go live just by opening
+ * another section.
  */
 
 jQuery(document).ready(function() {
@@ -17,7 +21,6 @@ jQuery(document).ready(function() {
         section.expanded.bind( function( isExpanded ) {				
             var url;
             if ( isExpanded ) {
-				jQuery('#save').trigger('click');
                 url = cev_customizer.seperate_email_preview_url;
                 api.previewer.previewUrl.set( url );
             }
@@ -30,7 +33,6 @@ jQuery(document).ready(function() {
         section.expanded.bind( function( isExpanded ) {				
             var url;
             if ( isExpanded ) {
-				jQuery('#save').trigger('click');
                 url = cev_customizer.my_account_email_preview_url;
                 api.previewer.previewUrl.set( url );
             }
@@ -43,7 +45,6 @@ jQuery(document).ready(function() {
         section.expanded.bind( function( isExpanded ) {				
             var url;
             if ( isExpanded ) {
-				jQuery('#save').trigger('click');
                 url = cev_customizer.verification_widget_message_preview_url;				
                 api.previewer.previewUrl.set( url );
             }

@@ -31,6 +31,19 @@
 	letter-spacing: 0.02em;
 }
 
+/* Inline leading dot — place inside a .zui-badge to render a small
+   filled circle in the badge's current text color (e.g. order-status
+   pills: "• Pending payment"). */
+
+.zui-scope .zui-badge__dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: currentColor;
+	flex-shrink: 0;
+}
+
 /* Variants */
 
 .zui-scope .zui-badge--success {

@@ -7,6 +7,21 @@ jQuery(document).ready(function($) {
             $form.prepend('<div class="woocommerce-error">' + message + '</div>');
         }
 
+        // Fill the {customer_email} tag in the popup message with the address
+        // the customer typed (as escaped text). The original message is kept so
+        // a second attempt with another address is filled correctly too.
+        function fillCustomerEmail(email) {
+            var $desc = $('#otp-popup .cev-authorization__description');
+            if (!$desc.length) {
+                return;
+            }
+            if (undefined === $desc.data('cevTemplate')) {
+                $desc.data('cevTemplate', $desc.html());
+            }
+            var safeEmail = $('<div>').text(email || '').html();
+            $desc.html(String($desc.data('cevTemplate')).split('{customer_email}').join(safeEmail));
+        }
+
         function clearErrors() {
             $('.woocommerce-error').remove();
         }
@@ -106,6 +121,7 @@ jQuery(document).ready(function($) {
                             $form.find('button[name="register"]').trigger('click');
                         } else if (data.email) {
                             stopProcessing($button);
+                            fillCustomerEmail($form.find('input[name="email"]').val());
                             $('#otp-popup').show();
                         } else if (data.validation == false) {
                             displayError(data.message);
@@ -240,6 +256,11 @@ jQuery(document).ready(function($) {
                     nonce: cev_ajax.nonce 
                 },
                 success: function(response) {
+                    if (response && false === response.success) {
+                        // Resend limit reached or resend disabled: show the store's message in the popup.
+                        $('.error_mesg').text(response.data && response.data.message ? response.data.message : cev_ajax.cev_error_prefix).css('display', 'block');
+                        return;
+                    }
                     if (response.data.email) {
                         $('.resend_sucsess').show();
                         setTimeout(function() {

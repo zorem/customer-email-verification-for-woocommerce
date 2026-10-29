@@ -4,9 +4,10 @@
  *
  * Lucide-style stroke icons in a single resolver function. Any consumer
  * plugin (AST PRO, CEV PRO, CBR PRO, Local Pickup PRO, etc.) can include
- * THIS file once and call `zui_icon( 'name' )` / `zui_get_icon( 'name' )`
- * without shipping its own icon set — keeps the UI consistent across
- * the whole Zorem plugin family and avoids icon duplication per plugin.
+ * THIS file once and call `\Zorem\UI\icon( 'name' )` /
+ * `\Zorem\UI\get_icon( 'name' )` without shipping its own icon set —
+ * keeps the UI consistent across the whole Zorem plugin family and
+ * avoids icon duplication per plugin.
  *
  * Output is static, trusted markup (no user data), so it is echoed
  * directly. The function guards against double-inclusion via
@@ -16,14 +17,20 @@
  * Source palette: lucide.dev (MIT-licensed). Stroke width 2,
  * 24×24 viewBox, rounded caps/joins.
  *
+ * Since 1.9.2 the resolver + printer live in the `Zorem\UI` namespace
+ * (was global `zui_get_icon()` / `zui_icon()`). Consumer templates must
+ * update call sites; there are no backward-compat shims.
+ *
  * @package Zorem_UI
  */
+
+namespace Zorem\UI;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! function_exists( 'zui_get_icon' ) ) {
+if ( ! function_exists( __NAMESPACE__ . '\\get_icon' ) ) {
 	/**
 	 * Return inline SVG markup for a named icon.
 	 *
@@ -34,7 +41,7 @@ if ( ! function_exists( 'zui_get_icon' ) ) {
 	 * @param string $classes Extra CSS classes appended to `zui-icon`.
 	 * @return string SVG markup.
 	 */
-	function zui_get_icon( $name, $classes = '' ) {
+	function get_icon( $name, $classes = '' ) {
 
 		$paths = array(
 			/* ---- Generic UI ---- */
@@ -78,6 +85,7 @@ if ( ! function_exists( 'zui_get_icon' ) ) {
 			'layers'            => '<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
 			'server'            => '<rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>',
 			'message-square'    => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+			'lock'              => '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
 
 			/* ---- Plugin / ecosystem icons (License tab plugin grid) ---- */
 			'truck'             => '<path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
@@ -99,15 +107,65 @@ if ( ! function_exists( 'zui_get_icon' ) ) {
 	}
 }
 
-if ( ! function_exists( 'zui_icon' ) ) {
+if ( ! function_exists( __NAMESPACE__ . '\\svg_kses_allowed' ) ) {
+	/**
+	 * Allowed-tag map used when echoing library-generated SVG through wp_kses().
+	 *
+	 * Covers every element/attribute the library emits. Kept internal (not
+	 * documented as a consumer API) so future icon additions can extend it
+	 * without breaking downstream contracts.
+	 *
+	 * @return array
+	 */
+	function svg_kses_allowed() {
+		return array(
+			'svg'      => array(
+				'class'            => true,
+				'xmlns'            => true,
+				'width'            => true,
+				'height'           => true,
+				'viewbox'          => true,
+				'fill'             => true,
+				'stroke'           => true,
+				'stroke-width'     => true,
+				'stroke-linecap'   => true,
+				'stroke-linejoin'  => true,
+				'aria-hidden'      => true,
+				'focusable'        => true,
+			),
+			'circle'   => array( 'cx' => true, 'cy' => true, 'r' => true ),
+			'ellipse'  => array( 'cx' => true, 'cy' => true, 'rx' => true, 'ry' => true ),
+			'path'     => array( 'd' => true ),
+			'polygon'  => array( 'points' => true ),
+			'polyline' => array( 'points' => true ),
+			'line'     => array( 'x1' => true, 'x2' => true, 'y1' => true, 'y2' => true ),
+			'rect'     => array(
+				'x'      => true,
+				'y'      => true,
+				'width'  => true,
+				'height' => true,
+				'rx'     => true,
+				'ry'     => true,
+			),
+		);
+	}
+}
+
+if ( ! function_exists( __NAMESPACE__ . '\\icon' ) ) {
 	/**
 	 * Echo a named inline SVG icon.
+	 *
+	 * Runs the generated markup through `wp_kses()` with a scoped allow-list
+	 * so consumer plugins' PHPCS runs pass the
+	 * `WordPress.Security.EscapeOutput.OutputNotEscaped` sniff without any
+	 * `phpcs:ignore` bypass. The SVG comes from a hardcoded resolver in
+	 * `get_icon()`, so `wp_kses()` is only defence-in-depth here.
 	 *
 	 * @param string $name    Icon key.
 	 * @param string $classes Extra CSS classes.
 	 * @return void
 	 */
-	function zui_icon( $name, $classes = '' ) {
-		echo zui_get_icon( $name, $classes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static trusted SVG.
+	function icon( $name, $classes = '' ) {
+		echo wp_kses( get_icon( $name, $classes ), svg_kses_allowed() );
 	}
 }

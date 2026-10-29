@@ -53,10 +53,12 @@ class WC_Customer_Email_Verification_Email_Common {
 		$mailer = WC()->mailer();
 		ob_start();
 	
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress/WooCommerce hook, not owned by this plugin.
 		//do_action( 'woocommerce_email_header',  $email_heading,  $email ); 	
 		$mailer->email_header( $email_heading, $email );		
 		$email_body = get_option( 'cev_verification_email_body', $cev_initialise_customizer_settings->defaults['cev_verification_email_body'] );
 		$email_body = WC_customer_email_verification_email_Common()->maybe_parse_merge_tags( $email_body );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Established public filter of this plugin; renaming breaks existing integrations.
 		$email_body = apply_filters( 'cev_verification_email_content', $email_body );
 		$email_body = wpautop( $email_body );
 		$email_body = wp_kses_post( $email_body );
@@ -68,8 +70,10 @@ class WC_Customer_Email_Verification_Email_Common {
 		$email_abstract_object = new WC_Email();
 		
 		
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress/WooCommerce hook, not owned by this plugin.
 		$email_body = apply_filters( 'woocommerce_mail_content', $email_abstract_object->style_inline( wptexturize( $email_body ) ) );		
 			
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Established public filter of this plugin; renaming breaks existing integrations.
 		$email_body = apply_filters( 'wc_cev_decode_html_content', $email_body );		
 		
 		$result = $mailer->send( $email, $email_subject, $email_body );
@@ -228,6 +232,7 @@ class WC_Customer_Email_Verification_Email_Common {
 	
 	public function cev_resend_email_link() {
 		$link = add_query_arg( array(
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- URL-safe encoding of an id for a verification link, not obfuscation.
 			'cev_redirect_limit_resend' => base64_encode( $this->wuev_user_id ),
 		), get_the_permalink( $this->wuev_myaccount_page_id ) );
 		$resend_confirmation_text = __( 'Resend confirmation email', 'customer-email-verification-for-woocommerce' );
@@ -240,9 +245,13 @@ class WC_Customer_Email_Verification_Email_Common {
 
 		$user_email = $this->registerd_user_email;
 		global $wpdb;
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 		$email_exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}cev_user_log WHERE email = %s", $user_email));
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 		if ($email_exists) {
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 			$verification_pin = $wpdb->get_var($wpdb->prepare("SELECT pin FROM {$wpdb->prefix}cev_user_log WHERE email = %s", $user_email));
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 		} else {
 			$user_id = $this->wuev_user_id;
 			$cev_email_verification_pin = get_user_meta( $user_id, 'cev_email_verification_pin', true );
@@ -257,12 +266,14 @@ class WC_Customer_Email_Verification_Email_Common {
 	}
 	
 	public function generate_verification_pin() {
-		$digits = apply_filters( 'cev_verification_code_length', __( 4, 'customer-email-verification-for-woocommerce' ) );
+		// OTP Length setting: '2' = 6 digits, anything else = 4 digits.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Established public filter of this plugin; renaming breaks existing integrations.
+		$digits = apply_filters( 'cev_verification_code_length', '2' === (string) get_option( 'cev_verification_code_length', '1' ) ? 6 : 4 );
 		$i = 0; //counter
 		$pin = ''; //our default pin is blank.
 		while ( $i < $digits ) {
 			//generate a random number between 0 and 9.
-			$pin .= mt_rand(0, 9);
+			$pin .= wp_rand( 0, 9 );
 			$i++;
 		}
 		return $pin;
@@ -273,8 +284,10 @@ class WC_Customer_Email_Verification_Email_Common {
 	}
 	
 	public function cev_resend_verification() {	
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Established public filter of this plugin; renaming breaks existing integrations.
 		$resend_limit_reached = apply_filters( 'cev_resend_email_limit', false, get_current_user_id() );
-		$resend_email_link = add_query_arg( array('cev_redirect_limit_resend' => base64_encode( get_current_user_id() ),), get_the_permalink( $this->wuev_myaccount_page_id ) ); 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- URL-safe encoding of an id for a verification link, not obfuscation.
+		$resend_email_link = add_query_arg( array('cev_redirect_limit_resend' => base64_encode( get_current_user_id() ),), get_the_permalink( $this->wuev_myaccount_page_id ) );
 		if ( is_account_page() ) {
 			ob_start(); 
 			?>
@@ -301,6 +314,7 @@ class WC_Customer_Email_Verification_Email_Common {
  *
  * @return zorem_woo_il_post
 */
+// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- Established public API of this plugin; renaming breaks CEV PRO and customer code.
 function WC_customer_email_verification_email_Common() {
 	static $instance;
 

@@ -55,6 +55,11 @@
 
 /* ---- Inline info helpers ---- */
 @import url("./components/tipbox.css");
+@import url("./components/lock-section.css");
+@import url("./components/pro-feature.css");
+
+/* ---- Collapsibles ---- */
+@import url("./components/accordion.css");
 
 /* ---- Overlays ---- */
 @import url("./components/menu.css");
@@ -63,6 +68,7 @@
 @import url("./components/snackbar.css");
 @import url("./components/loader.css");
 @import url("./components/notice.css");
+@import url("./components/plugin-notice.css");
 
 /* ---- License page (cross-plugin shared template) ---- */
 @import url("./components/lic-page.css");

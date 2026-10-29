@@ -45,8 +45,10 @@ class CEV_Installation {
 	public function create_user_log_table() {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'cev_user_log';		
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 		if ( !$wpdb->query( $wpdb->prepare( 'show tables like %s', $table_name ) ) ) {	
 			$charset_collate = $wpdb->get_charset_collate();
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 
 			$sql = "CREATE TABLE $table_name (
 				id int(11) NOT NULL AUTO_INCREMENT,

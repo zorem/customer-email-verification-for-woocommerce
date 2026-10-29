@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 			<?php cev_new_account_email_customizer::preview_new_account_email(); ?>
 		</div>
 		<?php
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress/WooCommerce hook, not owned by this plugin.
 		do_action( 'woomail_footer' );
 		wp_footer();
 		?>

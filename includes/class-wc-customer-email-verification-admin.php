@@ -55,7 +55,11 @@ class WC_Customer_Email_Verification_Admin {
 		add_filter( 'handle_bulk_actions-users', array( $this, 'users_bulk_action_handler' ), 10, 3 );
 		add_action( 'admin_notices', array( $this, 'user_bulk_action_notices' ) );
 		
-		if ( isset( $_GET['page'] ) && 'customer-email-verification-for-woocommerce' == $_GET['page'] ) {
+		// Read-only screen/preview check, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$cev_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+
+		if ( 'customer-email-verification-for-woocommerce' === $cev_page ) {
 			// Hook for add admin body class in settings page
 			add_filter( 'admin_body_class', array( $this, 'cev_post_admin_body_class' ), 100 );
 		}
@@ -65,21 +69,157 @@ class WC_Customer_Email_Verification_Admin {
 		// Delete user Ajax
 		add_action( 'wp_ajax_delete_user', array( $this, 'cev_delete_user' ), 4);
 		add_action( 'wp_ajax_delete_users', array( $this, 'cev_delete_users' ), 4);
+
+		// Unverified Users: resend one pending signup's verification email.
+		add_action( 'wp_ajax_cev_resend_signup_email', array( $this, 'cev_resend_signup_email' ) );
+
+		// Setup checklist: send a test verification email / hide the checklist.
+		add_action( 'wp_ajax_cev_send_test_email', array( $this, 'cev_send_test_email' ) );
+		add_action( 'wp_ajax_cev_dismiss_checklist', array( $this, 'cev_dismiss_checklist' ) );
+
+		// Setup checklist: remember when the verification email was customized.
+		add_action( 'customize_save_after', array( $this, 'cev_mark_email_customized' ) );
+	}
+
+	/**
+	 * AJAX: resend the verification email to one pending signup.
+	 *
+	 * Sends the address's current code again and restarts its reuse window,
+	 * so the code still works when the customer comes back to register.
+	 */
+	public function cev_resend_signup_email() {
+		check_ajax_referer( 'cev_resend_signup_email', 'nonce' );
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to do this.', 'customer-email-verification-for-woocommerce' ) ), 403 );
+		}
+
+		$cev_id = isset( $_POST['id'] ) ? absint( wp_unslash( $_POST['id'] ) ) : 0;
+
+		global $wpdb;
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
+		$cev_email = $wpdb->get_var( $wpdb->prepare( "SELECT email FROM {$wpdb->prefix}cev_user_log WHERE id = %d", $cev_id ) );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
+
+		if ( empty( $cev_email ) || ! is_email( $cev_email ) ) {
+			wp_send_json_error( array( 'message' => __( 'This signup no longer exists.', 'customer-email-verification-for-woocommerce' ) ) );
+		}
+
+		$cev_sent = woo_customer_email_verification()->signup->send_verification_email_message( $cev_email );
+
+		if ( ! $cev_sent ) {
+			wp_send_json_error( array( 'message' => __( 'The email could not be sent. Check your store email settings.', 'customer-email-verification-for-woocommerce' ) ) );
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
+		$wpdb->update( "{$wpdb->prefix}cev_user_log", array( 'last_updated' => current_time( 'mysql' ) ), array( 'id' => $cev_id ), array( '%s' ), array( '%d' ) );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
+
+		/* translators: %s: customer email address. */
+		$cev_message = sprintf( __( 'Verification email sent to %s.', 'customer-email-verification-for-woocommerce' ), $cev_email );
+		wp_send_json_success( array( 'message' => $cev_message ) );
+	}
+
+	/**
+	 * AJAX: send a test verification email to the current admin.
+	 */
+	public function cev_send_test_email() {
+		check_ajax_referer( 'cev_setup_checklist', 'nonce' );
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to do this.', 'customer-email-verification-for-woocommerce' ) ), 403 );
+		}
+
+		$cev_to = wp_get_current_user()->user_email;
+
+		// No user context: the {cev_user_verification_pin} tag then shows a fresh
+		// sample code instead of reading another user's stored code.
+		WC_customer_email_verification_email_Common()->wuev_user_id = null;
+
+		$cev_sent = is_email( $cev_to ) && woo_customer_email_verification()->signup->send_verification_email_message( $cev_to );
+
+		if ( ! $cev_sent ) {
+			wp_send_json_error( array( 'message' => __( 'The test email could not be sent. Check your store email settings.', 'customer-email-verification-for-woocommerce' ) ) );
+		}
+
+		update_option( 'cev_checklist_test_email_sent', 1, false );
+
+		/* translators: %s: admin email address the test was sent to. */
+		$cev_message = sprintf( __( 'Test email sent to %s.', 'customer-email-verification-for-woocommerce' ), $cev_to );
+		wp_send_json_success( array( 'message' => $cev_message ) );
+	}
+
+	/**
+	 * AJAX: hide the setup checklist for good.
+	 */
+	public function cev_dismiss_checklist() {
+		check_ajax_referer( 'cev_setup_checklist', 'nonce' );
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array(), 403 );
+		}
+		update_option( 'cev_checklist_dismissed', 1, false );
+		wp_send_json_success();
+	}
+
+	/**
+	 * Remember that the verification email/popup was customized.
+	 *
+	 * @param WP_Customize_Manager $manager Customizer manager.
+	 */
+	public function cev_mark_email_customized( $manager ) {
+		foreach ( array_keys( $manager->unsanitized_post_values() ) as $cev_setting_id ) {
+			if ( 0 === strpos( $cev_setting_id, 'cev_' ) ) {
+				update_option( 'cev_checklist_email_customized', 1, false );
+				return;
+			}
+		}
+	}
+
+	/**
+	 * Setup checklist steps and whether each is done.
+	 *
+	 * @return array
+	 */
+	public function get_cev_setup_checklist() {
+		$cev_customizer = new cev_initialise_customizer_settings();
+		return array(
+			'enable'    => array(
+				'label' => __( 'Turn on signup verification', 'customer-email-verification-for-woocommerce' ),
+				'done'  => 1 === (int) get_option( 'cev_enable_email_verification', 1 ),
+			),
+			'test'      => array(
+				'label' => __( 'Send yourself a test verification email', 'customer-email-verification-for-woocommerce' ),
+				'done'  => (bool) get_option( 'cev_checklist_test_email_sent' ),
+			),
+			'customize' => array(
+				'label' => __( 'Customize the verification email and popup', 'customer-email-verification-for-woocommerce' ),
+				'done'  => (bool) get_option( 'cev_checklist_email_customized' ),
+				'url'   => $cev_customizer->get_customizer_url( 'cev_main_controls_section', 'settings' ),
+			),
+			'users'     => array(
+				'label' => __( 'Check the Unverified Users list', 'customer-email-verification-for-woocommerce' ),
+				'done'  => (bool) get_option( 'cev_checklist_users_viewed' ),
+				'url'   => admin_url( 'admin.php?page=customer-email-verification-for-woocommerce&tab=unverified-users' ),
+			),
+		);
 	}
 	public function cev_delete_user() {
 		// Check nonce for security
 		check_ajax_referer('delete_user_nonce', 'nonce');
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json( array( 'success' => false ), 403 );
+		}
 	
 		if (isset($_POST['id'])) {
 			global $wpdb;
 			$id = intval($_POST['id']);
 			$table_name = $wpdb->prefix . 'cev_user_log';
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 			$result = $wpdb->delete($table_name, array('id' => $id), array('%d'));
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 	
 			if (false !== $result) {
-				echo json_encode(array('success' => true));
+				echo wp_json_encode(array('success' => true));
 			} else {
-				echo json_encode(array('success' => false));
+				echo wp_json_encode(array('success' => false));
 			}
 		}
 		wp_die(); // Required to terminate immediately and return a proper response
@@ -88,6 +228,9 @@ class WC_Customer_Email_Verification_Admin {
 	public function cev_delete_users() {
 		// Check nonce for security
 		check_ajax_referer('delete_user_nonce', 'nonce');
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json( array( 'success' => false ), 403 );
+		}
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'cev_user_log';
 		
@@ -111,7 +254,9 @@ class WC_Customer_Email_Verification_Admin {
 				}
 	
 				// Perform the delete operation
+				// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 				$result = $wpdb->delete($table_name, ['id' => $id], ['%d']);
+				// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 				if ($result) {
 					$results['success']++;
 				} else {
@@ -125,7 +270,7 @@ class WC_Customer_Email_Verification_Admin {
 		}
 	
 		// Return a single JSON response
-		echo json_encode($results);
+		echo wp_json_encode($results);
 		wp_die(); // Required to terminate immediately and return a proper response
 	}
 	/*
@@ -149,11 +294,11 @@ class WC_Customer_Email_Verification_Admin {
 	*/
 	public function admin_styles( $hook ) {						
 		
-		if ( !isset( $_GET['page'] ) ) {
-			return;
-		}
-		
-		if ( 'customer-email-verification-for-woocommerce' != $_GET['page'] ) {
+		// Read-only screen/preview check, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$cev_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+
+		if ( 'customer-email-verification-for-woocommerce' !== $cev_page ) {
 			return;
 		}
 
@@ -164,9 +309,8 @@ class WC_Customer_Email_Verification_Admin {
 		// the browser cache automatically.
 		$zui_url = woo_customer_email_verification()->plugin_dir_url() . 'assets/zui/';
 		$zui_dir = woo_customer_email_verification()->get_plugin_path() . '/assets/zui/';
-		$zui_ver = is_readable( $zui_dir . 'VERSION' )
-			? trim( file_get_contents( $zui_dir . 'VERSION' ) )
-			: woo_customer_email_verification()->version;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a plugin-bundled text file, not a remote resource.
+		$zui_ver = is_readable( $zui_dir . 'VERSION' ) ? trim( file_get_contents( $zui_dir . 'VERSION' ) ) : woo_customer_email_verification()->version;
 		wp_enqueue_style( 'zui', $zui_url . 'css/zui.css', array(), $zui_ver );
 		wp_enqueue_script( 'zui', $zui_url . 'js/zui.js', array(), $zui_ver, true );
 
@@ -175,7 +319,7 @@ class WC_Customer_Email_Verification_Admin {
 		// stylesheet is read-only for this plugin, so we enqueue each missing
 		// Phase-1 component as its own handle, each depending on `zui` so
 		// they always load after the foundation tokens/reset.
-		$cev_zui_components = array( 'bulk-bar', 'actions-menu', 'avatar', 'table', 'datatables', 'upsell' );
+		$cev_zui_components = array( 'bulk-bar', 'actions-menu', 'avatar', 'table', 'datatables' );
 		foreach ( $cev_zui_components as $cev_zui_component ) {
 			wp_enqueue_style(
 				'zui-' . $cev_zui_component,
@@ -188,11 +332,11 @@ class WC_Customer_Email_Verification_Admin {
 		// CEV-only overrides on top of the shared library (scoped to .cev-admin).
 		// Depends on the last library component so its rules always load LAST
 		// and win the cascade for any colour / spacing adjustments.
-		wp_enqueue_style( 'cev-admin-overrides', woo_customer_email_verification()->plugin_dir_url() . 'assets/css/cev-admin.css', array( 'zui', 'zui-bulk-bar', 'zui-actions-menu', 'zui-avatar', 'zui-table', 'zui-datatables', 'zui-upsell' ), time() );
+		wp_enqueue_style( 'cev-admin-overrides', woo_customer_email_verification()->plugin_dir_url() . 'assets/css/cev-admin.css', array( 'zui', 'zui-bulk-bar', 'zui-actions-menu', 'zui-avatar', 'zui-table', 'zui-datatables' ), time() );
 
 		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
-		wp_register_script( 'select2', WC()->plugin_url() . '/assets/js/select2/select2.full' . $suffix . '.js', array( 'jquery' ), '4.0.3' );
+		wp_register_script( 'select2', WC()->plugin_url() . '/assets/js/select2/select2.full' . $suffix . '.js', array( 'jquery' ), '4.0.3', false );
 		wp_enqueue_script( 'select2');
 		wp_enqueue_style( 'wp-color-picker' );
 
@@ -207,11 +351,17 @@ class WC_Customer_Email_Verification_Admin {
 		wp_localize_script( 'customer_email_verification_script', 'customer_email_verification_script', array() );
 		wp_localize_script('customer_email_verification_script', 'cev_vars', array(
 			'delete_user_nonce' => wp_create_nonce('delete_user_nonce'),
-			'ajax_url' => admin_url('admin-ajax.php')
-		)); 
+			'ajax_url' => admin_url('admin-ajax.php'),
+			'resend_nonce'      => wp_create_nonce( 'cev_resend_signup_email' ),
+			'checklist_nonce'   => wp_create_nonce( 'cev_setup_checklist' ),
+			'i18n'              => array(
+				'request_failed' => __( 'Something went wrong. Please try again.', 'customer-email-verification-for-woocommerce' ),
+				'sending'        => __( 'Sending…', 'customer-email-verification-for-woocommerce' ),
+			),
+		));
 		
-		wp_register_script( 'selectWoo', WC()->plugin_url() . '/assets/js/selectWoo/selectWoo.full' . $suffix . '.js', array( 'jquery' ), '1.0.4' );
-		wp_register_script( 'wc-enhanced-select', WC()->plugin_url() . '/assets/js/admin/wc-enhanced-select' . $suffix . '.js', array( 'jquery', 'selectWoo' ), WC_VERSION );
+		wp_register_script( 'selectWoo', WC()->plugin_url() . '/assets/js/selectWoo/selectWoo.full' . $suffix . '.js', array( 'jquery' ), '1.0.4', false );
+		wp_register_script( 'wc-enhanced-select', WC()->plugin_url() . '/assets/js/admin/wc-enhanced-select' . $suffix . '.js', array( 'jquery', 'selectWoo' ), WC_VERSION, false );
 		wp_register_script( 'wc-jquery-blockui', WC()->plugin_url() . '/assets/js/jquery-blockui/jquery.blockUI' . $suffix . '.js', array( 'jquery' ), '2.70', true );
 		
 		
@@ -219,8 +369,9 @@ class WC_Customer_Email_Verification_Admin {
 		wp_enqueue_script( 'selectWoo');
 		wp_enqueue_script( 'wc-enhanced-select');
 
-		wp_enqueue_script('datatables-js', 'https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js', array('jquery'), time(), true);
-		wp_enqueue_style('datatables-css', 'https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css', array(), time());
+		// Bundled locally: WordPress.org disallows loading assets from a remote CDN.
+		wp_enqueue_script( 'datatables-js', woo_customer_email_verification()->plugin_dir_url() . 'assets/js/vendor/jquery.dataTables.min.js', array( 'jquery' ), '1.11.5', true );
+		wp_enqueue_style( 'datatables-css', woo_customer_email_verification()->plugin_dir_url() . 'assets/css/jquery.dataTables.min.css', array(), '1.11.5' );
 		
 		wp_enqueue_style( 'woocommerce_admin_styles', WC()->plugin_url() . '/assets/css/admin.css', array(), time());
 		
@@ -241,7 +392,14 @@ class WC_Customer_Email_Verification_Admin {
 		wp_enqueue_script( 'customer_email_verification_table_rows' );	
 		$ignore = get_transient( 'cev_settings_admin_notice_ignore' );
 		$dismissable_url = esc_url(  add_query_arg( 'cev-pro-settings-ignore-notice', 'true' ) ); 
-		$tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'email-verification';
+		// Which settings tab to render; read-only, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'email-verification';
+
+		// Setup checklist: opening the Unverified Users tab completes that step.
+		if ( 'unverified-users' === $tab && ! get_option( 'cev_checklist_users_viewed' ) ) {
+			update_option( 'cev_checklist_users_viewed', 1, false );
+		}
 
 		$breadcrumb_text = __( 'Settings', 'customer-email-verification-for-woocommerce' );
 		if ( 'unverified-users' === $tab ) {
@@ -255,6 +413,15 @@ class WC_Customer_Email_Verification_Admin {
 		<div class="zui-scope cev-admin" id="cev-admin-app">
 
 			<?php include $plugin_path . '/includes/views/zui-page-header.php'; ?>
+
+			<?php
+			// CEV PRO 30% offer banner on the Settings + Unverified Users tabs.
+			$cev_offer_end_ts = ( new DateTimeImmutable( '2026-11-15 23:59:59', wp_timezone() ) )->getTimestamp();
+			if ( time() < $cev_offer_end_ts ) {
+				$cev_offer_visible = in_array( $tab, array( 'email-verification', 'unverified-users' ), true );
+				include $plugin_path . '/includes/views/zui-pro-offer-banner.php';
+			}
+			?>
 
 			<?php /* All three tab panels live in the DOM at once; the inline JS
 			        below toggles their visibility on tab click so navigating
@@ -271,6 +438,8 @@ class WC_Customer_Email_Verification_Admin {
 			<div class="cev-tab-panel" data-cev-tab="add-ons" <?php echo ( 'add-ons' === $tab ) ? '' : 'hidden'; ?>>
 				<?php require $plugin_path . '/includes/views/zui-addons-tab.php'; ?>
 			</div>
+
+			<?php $this->render_pro_feature_modal(); ?>
 
 		</div>
 
@@ -296,6 +465,11 @@ class WC_Customer_Email_Verification_Admin {
 						t.removeAttribute( 'aria-current' );
 					}
 				} );
+				var offer = document.getElementById( 'cev-offer-banner' );
+				if ( offer && ! offer.hasAttribute( 'data-cev-offer-expired' ) ) {
+					offer.hidden = 'add-ons' === slug;
+				}
+
 				var activePanel = null;
 				panels.forEach( function ( p ) {
 					if ( p.getAttribute( 'data-cev-tab' ) === slug ) {
@@ -351,11 +525,13 @@ class WC_Customer_Email_Verification_Admin {
 	}
 
 	public function get_html_menu_tab( $arrays ) {
-		$tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'email-verification';
+		// Which settings tab to render; read-only, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'email-verification';
 		foreach ( (array) $arrays as $id => $array ) {
 			if ( isset( $array['type'] ) && 'link' == $array['type'] ) {
 				?>
-				<a class="menu_cev_link" href="<?php esc_html_e( esc_url( $array['link'] ) ); ?>"><?php esc_html_e( $array['title'] ); ?></a>
+				<a class="menu_cev_link" href="<?php echo esc_url( $array['link'] ); ?>"><?php echo esc_html( $array['title'] ); ?></a>
 				<?php
 			} else {
 				?>
@@ -378,7 +554,10 @@ class WC_Customer_Email_Verification_Admin {
 	 * @return void
 	 */
 	public function render_zui_menu_tabs( $arrays ) {
+		// Which settings tab/page to render; read-only, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
 		$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'email-verification';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
 		$cev_page    = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : 'customer-email-verification-for-woocommerce';
 
 		foreach ( (array) $arrays as $tab_id => $tab_data ) {
@@ -469,16 +648,16 @@ class WC_Customer_Email_Verification_Admin {
 				if ( $array['show'] ) {
 					$class = isset( $array['class'] ) ? $array['class'] : '';
 					?>
-					<li class="<?php esc_html_e( $class ); ?>">
+					<li class="<?php echo esc_attr( $class ); ?>">
 					<?php 
 					if ( 'desc' != $array['type'] && 'checkbox' != $array['type'] && 'checkbox_select' != $array['type'] ) { 
 						?>
 					<label class="settings_label">
 						<?php 
-						esc_html_e( $array['title'] );
+						echo esc_html( $array['title'] );
 						if ( isset( $array['tooltip'] ) ) {
 							?>
-							<span class="woocommerce-help-tip tipTip" title="<?php esc_html_e( $array['tooltip'] ); ?>"></span>
+							<span class="woocommerce-help-tip tipTip" title="<?php echo esc_attr( $array['tooltip'] ); ?>"></span>
 						<?php } ?>
 					</label>
 					<?php
@@ -488,12 +667,12 @@ class WC_Customer_Email_Verification_Admin {
 						$field_id = isset( $array['multiple'] ) ? $array['multiple'] : $id;
 						?>
 						<fieldset>
-							<select class="select select2" id="<?php esc_html_e( $field_id ); ?>" name="<?php esc_html_e( $id ); ?>" <?php esc_html_e( $multiple ); ?>>  
+							<select class="select select2" id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $id ); ?>" <?php echo esc_attr( $multiple ); ?>>  
 								<?php 
 								foreach ( ( array ) $array['options'] as $key => $val ) {
 									$selected = ( get_option( $id, $array['Default'] ) == ( string ) $key ) ? 'selected' : '';										
 									?>
-									<option value="<?php esc_html_e( $key ); ?>" <?php esc_html_e( $selected ); ?> ><?php esc_html_e( $val ); ?></option>
+									<option value="<?php echo esc_attr( $key ); ?>" <?php echo esc_attr( $selected ); ?> ><?php echo esc_html( $val ); ?></option>
 									<?php 
 								} 
 								?>
@@ -503,14 +682,14 @@ class WC_Customer_Email_Verification_Admin {
 					} elseif ( isset( $array['type'] ) && 'multiple_select' == $array['type'] ) {
 						?>
 						<div class="multiple_select_container">	
-							<select multiple class="wc-enhanced-select" name="<?php esc_html_e( $id ); ?>[]" id="<?php esc_html_e( $id ); ?>">
+							<select multiple class="wc-enhanced-select" name="<?php echo esc_attr( $id ); ?>[]" id="<?php echo esc_attr( $id ); ?>">
 							<?php
 							foreach ( (array) $array['options'] as $key => $val ) :
 								$multi_checkbox_data = get_option( $id );
 								$checked = isset( $multi_checkbox_data[$key] ) && 1 == $multi_checkbox_data[$key] ? 'selected' : '' ; 
 								?>
-								<option value="<?php esc_html_e( $key ); ?>" <?php esc_html_e( $checked ); ?>>
-									<?php esc_html_e( $val ); ?>
+								<option value="<?php echo esc_attr( $key ); ?>" <?php echo esc_attr( $checked ); ?>>
+									<?php echo esc_html( $val ); ?>
 								</option>
 							<?php 
 							endforeach;
@@ -521,15 +700,15 @@ class WC_Customer_Email_Verification_Admin {
 					} elseif ( 'checkbox' == $array['type'] ) { 
 						$checked = ( get_option( $id, $array['Default'] ) ) ? 'checked' : '';
 						?>
-						<label class="" for="<?php esc_html_e( $id ); ?>">
-							<input type="hidden" name="<?php esc_html_e( $id ); ?>" value="0"/>
-							<input type="checkbox" id="<?php esc_html_e( $id ); ?>" name="<?php esc_html_e( $id ); ?>" class="" <?php esc_html_e( $checked ); ?> value="1"/>
+						<label class="" for="<?php echo esc_attr( $id ); ?>">
+							<input type="hidden" name="<?php echo esc_attr( $id ); ?>" value="0"/>
+							<input type="checkbox" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $id ); ?>" class="" <?php echo esc_attr( $checked ); ?> value="1"/>
 							<span class="label">
 								<?php 
-								esc_html_e( $array['title'] );
+								echo esc_html( $array['title'] );
 								if ( isset( $array['tooltip'] ) ) {
 									?>
-									<span class="woocommerce-help-tip tipTip" title="<?php esc_html_e( $array['tooltip'] ); ?>"></span>
+									<span class="woocommerce-help-tip tipTip" title="<?php echo esc_attr( $array['tooltip'] ); ?>"></span>
 								<?php } ?>
 							</span>								
 						</label>	
@@ -537,20 +716,20 @@ class WC_Customer_Email_Verification_Admin {
 					} elseif ( 'checkbox_select' == $array['type'] ) { 
 						$checked = ( get_option( $id, $array['Default'] ) ) ? 'checked' : '';
 						?>
-						<label class="" for="<?php esc_html_e( $id ); ?>">
-							<input type="hidden" name="<?php esc_html_e( $id ); ?>" value="0"/>
-							<input type="checkbox" id="<?php esc_html_e( $id ); ?>" name="<?php esc_html_e( $id ); ?>" class="" <?php esc_html_e( $checked ); ?> value="1"/>
+						<label class="" for="<?php echo esc_attr( $id ); ?>">
+							<input type="hidden" name="<?php echo esc_attr( $id ); ?>" value="0"/>
+							<input type="checkbox" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $id ); ?>" class="" <?php echo esc_attr( $checked ); ?> value="1"/>
 							<span class="label">
 								<?php 
-								esc_html_e( $array['title'] );
+								echo esc_html( $array['title'] );
 								if ( !empty( $array['select'] ) ) {
 									?>
-									<select name="<?php esc_html_e( $array['select']['id'] ); ?>" style="width: auto;">
+									<select name="<?php echo esc_attr( $array['select']['id'] ); ?>" style="width: auto;">
 										<?php
 										foreach ( $array['select']['options'] as $key => $val ) {
 											$selected = ( get_option( $array['select']['id'], '' ) == $key ) ? 'selected' : '';
 											?>
-											<option value="<?php esc_html_e( $key ); ?>" <?php esc_html_e( $selected ); ?>><?php esc_html_e( $val ); ?></option>	
+											<option value="<?php echo esc_attr( $key ); ?>" <?php echo esc_attr( $selected ); ?>><?php echo esc_html( $val ); ?></option>	
 											<?php	
 										}	
 										?>
@@ -559,7 +738,7 @@ class WC_Customer_Email_Verification_Admin {
 								}
 								if ( isset( $array['tooltip'] ) ) {
 									?>
-									<span class="woocommerce-help-tip tipTip" title="<?php esc_html_e( $array['tooltip'] ); ?>"></span>
+									<span class="woocommerce-help-tip tipTip" title="<?php echo esc_attr( $array['tooltip'] ); ?>"></span>
 								<?php } ?>
 							</span>								
 						</label>	
@@ -577,10 +756,10 @@ class WC_Customer_Email_Verification_Admin {
 							?>
 							
 							<span class="multiple_checkbox">
-								<label class="" for="<?php esc_html_e( $key ); ?>">
-									<input type="hidden" name="<?php esc_html_e( $id ); ?>[<?php esc_html_e( $key ); ?>]" value="0"/>
-									<input type="checkbox" id="<?php esc_html_e( $key ); ?>" name="<?php esc_html_e( $id ); ?>[<?php esc_html_e( $key ); ?>]" class="" <?php esc_html_e( $checked ); ?> value="1"/>
-									<span class="multiple_label"><?php esc_html_e( $val ); ?></span>	
+								<label class="" for="<?php echo esc_attr( $key ); ?>">
+									<input type="hidden" name="<?php echo esc_attr( $id ); ?>[<?php echo esc_attr( $key ); ?>]" value="0"/>
+									<input type="checkbox" id="<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $id ); ?>[<?php echo esc_attr( $key ); ?>]" class="" <?php echo esc_attr( $checked ); ?> value="1"/>
+									<span class="multiple_label"><?php echo esc_html( $val ); ?></span>	
 									</br>
 								</label>																		
 							</span>												
@@ -591,9 +770,9 @@ class WC_Customer_Email_Verification_Admin {
 						?>
 						
 						<fieldset>
-							<textarea placeholder="<?php esc_html_e( $placeholder ); ?>" class="input-text regular-input" name="<?php esc_html_e( $id ); ?>" id="<?php esc_html_e( $id ); ?>"><?php esc_html_e( get_option( $id, $array['Default'] ) ); ?></textarea>                                
+							<textarea placeholder="<?php echo esc_attr( $placeholder ); ?>" class="input-text regular-input" name="<?php echo esc_attr( $id ); ?>" id="<?php echo esc_attr( $id ); ?>"><?php echo esc_textarea( get_option( $id, $array['Default'] ) ); ?></textarea>                                
 						</fieldset>
-						<span class="" style="font-size: 12px;"><?php esc_html_e( $array['desc_tip'] ); ?></span>
+						<span class="" style="font-size: 12px;"><?php echo esc_html( $array['desc_tip'] ); ?></span>
 					<?php
 					} elseif ( 'tag_block' == $array['type'] ) {
 						?>
@@ -603,13 +782,13 @@ class WC_Customer_Email_Verification_Admin {
 					<?php
 					} elseif ( 'desc' == $array['type'] ) {
 						?>
-						<p class="section_desc"><?php esc_html_e( $array['title'] ); ?></p>
+						<p class="section_desc"><?php echo esc_html( $array['title'] ); ?></p>
 					<?php
 					} else { 
 						$placeholder = ( !empty( $array['placeholder'] ) ) ? $array['placeholder'] : '';
 						?>
 						<fieldset>
-							<input class="input-text regular-input " type="text" name="<?php esc_html_e( $id ); ?>" id="<?php esc_html_e( $id ); ?>" style="" value="<?php esc_html_e( get_option( $id, $array['Default'] ) ); ?>" placeholder="<?php esc_html_e( $placeholder ); ?>">
+							<input class="input-text regular-input " type="text" name="<?php echo esc_attr( $id ); ?>" id="<?php echo esc_attr( $id ); ?>" style="" value="<?php echo esc_attr( get_option( $id, $array['Default'] ) ); ?>" placeholder="<?php echo esc_attr( $placeholder ); ?>">
 						</fieldset>
 					<?php } ?>
 					</li>
@@ -660,16 +839,16 @@ class WC_Customer_Email_Verification_Admin {
 			// 'cev_enter_account_after_registration' => array(
 			// 	'type'		=> 'checkbox',
 			// 	'show' => true,
-			// 	'tooltip' 		=> __('Allow your customers to access their account for the first time after registration before they verify the email address', 'customer-emial-verification-for-woocommerce'),
-			// 	'title' => __( 'Allow first login after registration without email verification', 'customer-emial-verification-for-woocommerce' ),				
+			// 	'tooltip' 		=> __('Allow your customers to access their account for the first time after registration before they verify the email address', 'customer-email-verification-for-woocommerce'),
+			// 	'title' => __( 'Allow first login after registration without email verification', 'customer-email-verification-for-woocommerce' ),				
 			// 	'Default'   => '',
 			// 	'class'     => '',
 			// ),
 			// 'cev_email_for_verification' => array(
 			// 	'type'		=> 'checkbox',
 			// 	'show' => true,
-			// 	'tooltip' 		=> __('if you select this option, the verification message, code and link will be added in New Account Emails. The separate email verification will be sent only when the customer (or admin) resend verification', 'customer-emial-verification-for-woocommerce'),
-			// 	'title' => __( 'Verification code in new account email', 'customer-emial-verification-for-woocommerce' ),				
+			// 	'tooltip' 		=> __('if you select this option, the verification message, code and link will be added in New Account Emails. The separate email verification will be sent only when the customer (or admin) resend verification', 'customer-email-verification-for-woocommerce'),
+			// 	'title' => __( 'Verification code in new account email', 'customer-email-verification-for-woocommerce' ),				
 			// 	'Default'   => '',
 			// 	'class'     => '',
 			// ),
@@ -683,6 +862,7 @@ class WC_Customer_Email_Verification_Admin {
 			// 	'options'   => $page_list, 				
 			// ),							
 		);
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Established public filter of this plugin; renaming breaks existing integrations.
 		$form_data = apply_filters( 'cev_general_settings_options', $form_data );
 		return $form_data;
 	}
@@ -743,7 +923,7 @@ class WC_Customer_Email_Verification_Admin {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$cev_nonce = isset( $_POST['cev_settings_form_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['cev_settings_form_nonce'] ) ) : '';
-		if ( ! wp_verify_nonce( $cev_nonce, 'cev_settings_form_nonce' ) ) {
+		if ( ! wp_verify_nonce( $cev_nonce, 'cev_settings_form_nonce' ) || ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
 		}
 
@@ -752,9 +932,18 @@ class WC_Customer_Email_Verification_Admin {
 			if ( ! isset( $_POST[ $cev_key ] ) ) {
 				continue;
 			}
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+			// Sanitized immediately below by the per-field branch; PHPCS cannot follow that.
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			$cev_raw = wp_unslash( $_POST[ $cev_key ] );
-			if ( 'textarea' === $cev_sanitizer ) {
+			if ( 'choice' === $cev_sanitizer ) {
+				// Dropdowns: only accept one of the field's own option keys.
+				$cev_general = $this->get_cev_general_settings_data();
+				$cev_choices = isset( $cev_general[ $cev_key ]['options'] ) ? $cev_general[ $cev_key ]['options'] : array();
+				$cev_value   = sanitize_text_field( $cev_raw );
+				if ( ! isset( $cev_choices[ $cev_value ] ) ) {
+					continue;
+				}
+			} elseif ( 'textarea' === $cev_sanitizer ) {
 				$cev_value = sanitize_textarea_field( $cev_raw );
 			} elseif ( 'absint' === $cev_sanitizer ) {
 				$cev_value = absint( $cev_raw );
@@ -842,6 +1031,10 @@ class WC_Customer_Email_Verification_Admin {
 	public function get_cev_free_field_keys() {
 		return array(
 			'cev_enable_email_verification'    => 'absint',
+			'cev_verification_code_length'     => 'choice',
+			'cev_verification_code_expiration' => 'choice',
+			'cev_redirect_limit_resend'        => 'choice',
+			'cev_resend_limit_message'         => 'textarea',
 			'cev_verification_success_message' => 'textarea',
 		);
 	}
@@ -879,7 +1072,7 @@ class WC_Customer_Email_Verification_Admin {
 	 *   description → translatable one-line hint shown under the label
 	 *   tooltip     → translatable hover text on the ? icon
 	 *   pro         → bool — when true the control slot renders the
-	 *                  cev-pro-tag (badge + lock) and no real input
+	 *                  a disabled control + PRO badge (AST Free pattern)
 	 *   Default     → default value (FREE fields only)
 	 *   options     → key/label pairs (dropdown / multiple_select)
 	 * =========================================================
@@ -901,71 +1094,110 @@ class WC_Customer_Email_Verification_Admin {
 				'title'       => __( 'Signup form type', 'customer-email-verification-for-woocommerce' ),
 				'description' => __( 'Choose the standard WooCommerce form or a modern, ready-made Smart Form.', 'customer-email-verification-for-woocommerce' ),
 				'tooltip'     => __( 'WooCommerce Form keeps the default registration/login form. Smart Form swaps in a modern, branded form with built-in email/phone verification.', 'customer-email-verification-for-woocommerce' ),
+				'options'     => array(
+					'woocommerce' => __( 'WooCommerce Form', 'customer-email-verification-for-woocommerce' ),
+					'smart'       => __( 'Smart Form', 'customer-email-verification-for-woocommerce' ),
+				),
 				'pro'         => true,
 			),
-			'cev_smart_placement' => array(
+		);
+	}
+
+	/**
+	 * Smart Form options (PRO).
+	 *
+	 * Shown on the Signup Verification section as a read-only preview under
+	 * the "Unlock the Smart Form" card, laid out exactly as CEV PRO shows
+	 * them when Smart Form is the selected signup form type. `preview`
+	 * holds the value each disabled control displays.
+	 *
+	 * @return array
+	 */
+	public function get_cev_smart_form_settings_data() {
+		return array(
+			'cev_smart_placement'               => array(
 				'type'        => 'shortcode',
 				'title'       => __( 'Add the Smart Form to any page', 'customer-email-verification-for-woocommerce' ),
-				'description' => __( 'Paste a shortcode where you want the form to appear.', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'Use this shortcode on any page or post to display the Smart Form.', 'customer-email-verification-for-woocommerce' ),
+				'description' => __( 'Paste this shortcode where you want the form to appear.', 'customer-email-verification-for-woocommerce' ),
+				'shortcode'   => '[cev_smart_form]',
 				'pro'         => true,
-				'hidden'      => true,
 			),
-			'cev_smart_takeover_myaccount' => array(
-				'type'        => 'toogel',
-				'title'       => __( 'Replace the My Account page form with the Smart Form', 'customer-email-verification-for-woocommerce' ),
-				'description' => __( 'When on, the Smart Form takes over the My Account login/registration page.', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'Replaces the default WooCommerce My Account form with the branded Smart Form.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
-				'hidden'      => true,
+			'cev_smart_takeover_myaccount'      => array(
+				'type'    => 'toogel',
+				'title'   => __( 'Replace the My Account page form with the Smart Form', 'customer-email-verification-for-woocommerce' ),
+				'tooltip' => __( 'On: the Smart Form takes over the My Account login/registration page. Off: the standard WooCommerce form stays and you add the Smart Form with the [cev_smart_form] shortcode.', 'customer-email-verification-for-woocommerce' ),
+				'pro'     => true,
+				'preview' => 1,
 			),
-			'cev_signup_smart_template' => array(
+			'cev_signup_smart_template'         => array(
 				'type'        => 'template_picker',
 				'title'       => __( 'Template', 'customer-email-verification-for-woocommerce' ),
-				'description' => __( 'Pick one of the four ready-made Smart Form templates.', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'Choose a layout style for the Smart Form. Each template is fully customizable.', 'customer-email-verification-for-woocommerce' ),
+				'description' => __( 'Every template shows Login and Register. Template 1 uses tabs, the others switch with a link (or show both columns). Design and content for the selected template are tuned in the Customizer.', 'customer-email-verification-for-woocommerce' ),
 				'pro'         => true,
-				'hidden'      => true,
+				'preview'     => 'template1',
 			),
-			'cev_smart_reg_method' => array(
-				'type'        => 'toggle_select',
-				'title'       => __( 'Registration verification method', 'customer-email-verification-for-woocommerce' ),
-				'description' => __( 'Verify new customers by email or by phone (SMS).', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'How a new customer proves they own their contact detail at sign-up.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
-				'hidden'      => true,
+			'cev_smart_reg_method'              => array(
+				'type'    => 'toggle_select',
+				'title'   => __( 'Registration verification method', 'customer-email-verification-for-woocommerce' ),
+				'tooltip' => __( 'How a new customer proves they own their contact detail at sign-up. Email verification sends a one-time code to their email; Phone (SMS) verification sends it to their phone (needs an SMS gateway).', 'customer-email-verification-for-woocommerce' ),
+				'options' => array(
+					'email' => array( 'label' => __( 'Email verification', 'customer-email-verification-for-woocommerce' ) ),
+					'phone' => array(
+						'label' => __( 'Phone (SMS) verification', 'customer-email-verification-for-woocommerce' ),
+						'desc'  => __( 'Requires an SMS gateway (e.g. SMS for WooCommerce).', 'customer-email-verification-for-woocommerce' ),
+					),
+				),
+				'pro'     => true,
+				'preview' => 'email',
 			),
-			'cev_smart_show_phone_field' => array(
-				'type'        => 'toogel',
-				'title'       => __( 'Show phone number field', 'customer-email-verification-for-woocommerce' ),
-				'description' => __( 'Display a phone number field on the registration form.', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'Adds a phone number input to the Smart Form registration step.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
-				'hidden'      => true,
+			'cev_smart_show_phone_field'        => array(
+				'type'    => 'toogel',
+				'title'   => __( 'Show phone number field', 'customer-email-verification-for-woocommerce' ),
+				'tooltip' => __( 'Display a phone number field on the registration form. It is always shown and required when Phone (SMS) verification is the registration method.', 'customer-email-verification-for-woocommerce' ),
+				'pro'     => true,
+				'preview' => 1,
 			),
-			'cev_smart_phone_required' => array(
-				'type'        => 'toogel',
-				'title'       => __( 'Require the phone number', 'customer-email-verification-for-woocommerce' ),
-				'description' => __( 'Make the phone number mandatory on the registration form.', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'When on, customers cannot complete registration without entering a phone number.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
-				'hidden'      => true,
+			'cev_smart_phone_required'          => array(
+				'type'    => 'toogel',
+				'title'   => __( 'Require the phone number', 'customer-email-verification-for-woocommerce' ),
+				'tooltip' => __( 'Make the phone number mandatory on the registration form.', 'customer-email-verification-for-woocommerce' ),
+				'pro'     => true,
+				'preview' => 0,
 			),
-			'cev_smart_login_method' => array(
-				'type'        => 'toggle_select',
-				'title'       => __( 'Login method', 'customer-email-verification-for-woocommerce' ),
-				'description' => __( 'Password, email OTP, or phone OTP for returning customers.', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'How returning customers sign in on the Smart Form.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
-				'hidden'      => true,
+			'cev_smart_login_method'            => array(
+				'type'    => 'toggle_select',
+				'title'   => __( 'Login method', 'customer-email-verification-for-woocommerce' ),
+				'tooltip' => __( 'How returning customers sign in on the Smart Form. Enable any combination: Password, Email OTP (a one-time code by email, no password) or Phone OTP (a code by SMS). When more than one is enabled, the login form shows a tab for each.', 'customer-email-verification-for-woocommerce' ),
+				'options' => array(
+					'password'  => array( 'label' => __( 'Password', 'customer-email-verification-for-woocommerce' ) ),
+					'email_otp' => array( 'label' => __( 'Email OTP', 'customer-email-verification-for-woocommerce' ) ),
+					'phone_otp' => array(
+						'label' => __( 'Phone OTP', 'customer-email-verification-for-woocommerce' ),
+						'desc'  => __( 'Requires an SMS gateway. Customers without a phone keep using the Email OTP fallback until they add one.', 'customer-email-verification-for-woocommerce' ),
+					),
+				),
+				'pro'     => true,
+				'preview' => 'password,email_otp',
 			),
-			'cev_smart_sms_gateway' => array(
+			'cev_smart_require_strong_password' => array(
+				'type'    => 'toogel',
+				'title'   => __( 'Require a strong password', 'customer-email-verification-for-woocommerce' ),
+				'tooltip' => __( 'On: registration passwords must include upper- and lower-case letters, a number and a symbol (plus the minimum length below). Off: only the minimum length is required.', 'customer-email-verification-for-woocommerce' ),
+				'pro'     => true,
+				'preview' => 1,
+			),
+			'cev_smart_password_min_length'     => array(
+				'type'    => 'dropdown',
+				'title'   => __( 'Minimum password length', 'customer-email-verification-for-woocommerce' ),
+				'tooltip' => __( 'The minimum number of characters a registration password must have.', 'customer-email-verification-for-woocommerce' ),
+				'pro'     => true,
+				'preview' => __( '8 characters', 'customer-email-verification-for-woocommerce' ),
+			),
+			'cev_smart_sms_gateway'             => array(
 				'type'        => 'sms_gateway',
-				'title'       => __( 'SMS gateway', 'customer-email-verification-for-woocommerce' ),
-				'description' => __( 'Configure MSG91 / Twilio / Vonage / WhatsApp for SMS delivery.', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'Pick a provider and enter API credentials for sending OTP SMS messages.', 'customer-email-verification-for-woocommerce' ),
+				'title'       => __( 'SMS Gateway', 'customer-email-verification-for-woocommerce' ),
+				'description' => __( 'Connect a provider to send verification codes by phone. Required for phone verification and Phone OTP login.', 'customer-email-verification-for-woocommerce' ),
 				'pro'         => true,
-				'hidden'      => true,
 			),
 		);
 	}
@@ -1005,7 +1237,7 @@ class WC_Customer_Email_Verification_Admin {
 				'type'        => 'toogel',
 				'title'       => __( 'Require checkout verification only for free orders', 'customer-email-verification-for-woocommerce' ),
 				'description' => __( 'Ensure free orders are tied to valid email addresses.', 'customer-email-verification-for-woocommerce' ),
-				'tooltip'     => __( 'Only show the OTP step on $0 / 100%-discount orders — paid orders skip verification.', 'customer-email-verification-for-woocommerce' ),
+				'tooltip'     => __( 'Only show the OTP step on $0 / fully discounted orders — paid orders skip verification.', 'customer-email-verification-for-woocommerce' ),
 				'pro'         => true,
 				'hidden'      => true,
 			),
@@ -1073,28 +1305,54 @@ class WC_Customer_Email_Verification_Admin {
 				'title'       => __( 'OTP Length', 'customer-email-verification-for-woocommerce' ),
 				'description' => __( 'Number of digits in the one-time code sent to customers.', 'customer-email-verification-for-woocommerce' ),
 				'tooltip'     => __( 'Number of digits in the one-time code sent to customers — 4 is quicker to type, 6 is harder to guess.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
+				'name'        => 'cev_verification_code_length',
+				'id'          => 'cev_verification_code_length',
+				'options'     => array(
+					'1' => __( '4-digit', 'customer-email-verification-for-woocommerce' ),
+					'2' => __( '6-digit', 'customer-email-verification-for-woocommerce' ),
+				),
+				'Default'     => '1',
 			),
 			'cev_verification_code_expiration' => array(
 				'type'        => 'dropdown',
 				'title'       => __( 'OTP Expiration', 'customer-email-verification-for-woocommerce' ),
 				'description' => __( 'How long the one-time code stays valid before it expires.', 'customer-email-verification-for-woocommerce' ),
 				'tooltip'     => __( 'Choose if you wish to set an expiry time on the OTP. After this period, the code is invalid and the customer must request a fresh one.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
+				'name'        => 'cev_verification_code_expiration',
+				'id'          => 'cev_verification_code_expiration',
+				'options'     => array(
+					'never'  => __( 'Never', 'customer-email-verification-for-woocommerce' ),
+					'600'    => __( '10 min', 'customer-email-verification-for-woocommerce' ),
+					'900'    => __( '15 min', 'customer-email-verification-for-woocommerce' ),
+					'1800'   => __( '30 min', 'customer-email-verification-for-woocommerce' ),
+					'3600'   => __( '1 Hour', 'customer-email-verification-for-woocommerce' ),
+					'86400'  => __( '24 Hours', 'customer-email-verification-for-woocommerce' ),
+					'259200' => __( '72 Hours', 'customer-email-verification-for-woocommerce' ),
+				),
+				'Default'     => 'never',
 			),
 			'cev_redirect_limit_resend' => array(
 				'type'        => 'dropdown',
 				'title'       => __( 'Verification Email Resend Limit', 'customer-email-verification-for-woocommerce' ),
 				'description' => __( 'How many times a customer can request a fresh code before resending is blocked.', 'customer-email-verification-for-woocommerce' ),
 				'tooltip'     => __( 'How many times a customer can request a fresh code before resending is blocked — protects against email/SMS flooding.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
+				'name'        => 'cev_redirect_limit_resend',
+				'id'          => 'cev_redirect_limit_resend',
+				'options'     => array(
+					'1' => __( 'Allow 1 Attempt', 'customer-email-verification-for-woocommerce' ),
+					'3' => __( 'Allow 3 Attempts', 'customer-email-verification-for-woocommerce' ),
+					'0' => __( 'Disable Resend', 'customer-email-verification-for-woocommerce' ),
+				),
+				'Default'     => '3',
 			),
 			'cev_resend_limit_message' => array(
 				'type'        => 'textarea',
 				'title'       => __( 'Resend Limit Message', 'customer-email-verification-for-woocommerce' ),
 				'description' => __( 'Message shown when the resend limit is reached.', 'customer-email-verification-for-woocommerce' ),
 				'tooltip'     => __( 'Message displayed to the customer once they hit the resend limit and can no longer request a fresh OTP.', 'customer-email-verification-for-woocommerce' ),
-				'pro'         => true,
+				'name'        => 'cev_resend_limit_message',
+				'id'          => 'cev_resend_limit_message',
+				'Default'     => __( 'Too many attempts, please contact us for further assistance.', 'customer-email-verification-for-woocommerce' ),
 			),
 			'cev_verification_success_message' => array(
 				'type'        => 'textarea',
@@ -1208,7 +1466,7 @@ class WC_Customer_Email_Verification_Admin {
 			),
 			'cev_disposable_built_in_desc' => array(
 				'type'   => 'desc',
-				'title'  => __( 'Built-in list contains ~3,000 known disposable email domains.', 'customer-email-verification-for-woocommerce' ),
+				'title'  => __( 'Built-in list contains 430+ known disposable email domains.', 'customer-email-verification-for-woocommerce' ),
 				'hidden' => true,
 			),
 			'cev_disposable_custom_domains' => array(
@@ -1399,10 +1657,146 @@ class WC_Customer_Email_Verification_Admin {
 	 * @param array $fields
 	 * @return void
 	 */
-	public function render_settings_fields( $fields ) {
+	public function render_settings_fields( $fields, $section = '' ) {
 		foreach ( (array) $fields as $cev_key => $cev_field ) {
-			$this->render_field_by_type( $cev_key, $cev_field );
+			$this->render_field_by_type( $cev_key, $cev_field, $section );
 		}
+	}
+
+	/**
+	 * Upgrade copy for every settings area that is entirely PRO-only.
+	 *
+	 * Keys match the section slugs in get_cev_sections_list() plus the
+	 * Unverified Users tab's `maintenance` pane. `content` is the
+	 * utm_content placement value.
+	 *
+	 * @return array
+	 */
+	public function get_cev_lock_section_data() {
+		return array(
+			'checkout_verification' => array(
+				'title'   => __( 'Unlock Checkout Verification', 'customer-email-verification-for-woocommerce' ),
+				'desc'    => __( 'Stop fake guest orders by asking guests to confirm their email before they can pay. Upgrade to CEV PRO to unlock these options.', 'customer-email-verification-for-woocommerce' ),
+				'content' => 'locked-checkout',
+			),
+			'login_auth'            => array(
+				'title'   => __( 'Unlock Login Authentication', 'customer-email-verification-for-woocommerce' ),
+				'desc'    => __( 'Ask for a one-time code when someone signs in from a new device or location. Upgrade to CEV PRO to unlock these options.', 'customer-email-verification-for-woocommerce' ),
+				'content' => 'locked-login',
+			),
+			'two_factor'            => array(
+				'title'   => __( 'Unlock Two-Factor Authentication', 'customer-email-verification-for-woocommerce' ),
+				'desc'    => __( 'Let customers protect their account with an authenticator app. Upgrade to CEV PRO to unlock these options.', 'customer-email-verification-for-woocommerce' ),
+				'content' => 'locked-2fa',
+			),
+			'spam_protection'       => array(
+				'title'   => __( 'Unlock Spam Protection', 'customer-email-verification-for-woocommerce' ),
+				'desc'    => __( 'Block disposable emails, mistyped domains and known abusers before they create an account. Upgrade to CEV PRO to unlock these options.', 'customer-email-verification-for-woocommerce' ),
+				'content' => 'locked-spam',
+			),
+			'advanced'              => array(
+				'title'   => __( 'Unlock Paid-Order Gatekeeping', 'customer-email-verification-for-woocommerce' ),
+				'desc'    => __( 'Only fully activate customers after their first paid order, to stop coupon and freebie abuse. Upgrade to CEV PRO to unlock this option.', 'customer-email-verification-for-woocommerce' ),
+				'content' => 'locked-advanced',
+			),
+			'smart_form'            => array(
+				'title'   => __( 'Unlock the Smart Form', 'customer-email-verification-for-woocommerce' ),
+				'desc'    => __( 'Replace the WooCommerce login and registration forms with a modern, ready-made Smart Form: four templates, email or phone (SMS) verification, password or one-time-code login, and password rules. Upgrade to CEV PRO to unlock these options.', 'customer-email-verification-for-woocommerce' ),
+				'content' => 'locked-smart-form',
+			),
+			'maintenance'           => array(
+				'title'   => __( 'Unlock Maintenance', 'customer-email-verification-for-woocommerce' ),
+				'desc'    => __( 'Clean up abandoned signups automatically and email reminders to customers who never verified. Upgrade to CEV PRO to unlock these options.', 'customer-email-verification-for-woocommerce' ),
+				'content' => 'locked-maintenance',
+			),
+		);
+	}
+
+	/**
+	 * Placement slug (utm_content) for a locked row inside a given section.
+	 *
+	 * @param string $section Section slug.
+	 * @return string
+	 */
+	public function get_cev_locked_content_slug( $section ) {
+		$cev_lock_data = $this->get_cev_lock_section_data();
+		if ( isset( $cev_lock_data[ $section ]['content'] ) ) {
+			return $cev_lock_data[ $section ]['content'];
+		}
+		$cev_partial = array(
+			'signup_verification' => 'locked-signup',
+			'general'             => 'locked-general',
+		);
+		return isset( $cev_partial[ $section ] ) ? $cev_partial[ $section ] : 'locked-option';
+	}
+
+	/**
+	 * Output the ZUI lock-section upgrade card for a PRO-only area.
+	 *
+	 * Markup is the library's canonical `.zui-lock-section` component.
+	 *
+	 * @param string $section Key from get_cev_lock_section_data().
+	 * @return void
+	 */
+	public function render_lock_section( $section ) {
+		$cev_lock_data = $this->get_cev_lock_section_data();
+		if ( ! isset( $cev_lock_data[ $section ] ) ) {
+			return;
+		}
+		$cev_lock = $cev_lock_data[ $section ];
+		$cev_url  = woo_customer_email_verification()->get_pro_upgrade_url( $cev_lock['content'] );
+		?>
+		<div class="zui-lock-section">
+			<div class="zui-lock-section__icon">
+				<svg class="zui-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+			</div>
+			<h3 class="zui-lock-section__title">
+				<?php echo esc_html( $cev_lock['title'] ); ?>
+				<span class="zui-lock-section__badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
+			</h3>
+			<p class="zui-lock-section__desc"><?php echo esc_html( $cev_lock['desc'] ); ?></p>
+			<a class="zui-btn-primary zui-lock-section__cta" href="<?php echo esc_url( $cev_url ); ?>" target="_blank" rel="noopener noreferrer">
+				<?php esc_html_e( 'Upgrade to PRO', 'customer-email-verification-for-woocommerce' ); ?>
+			</a>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Output the shared "Available in CEV PRO" modal.
+	 *
+	 * Clicking a PRO-locked row (in a partly free section) opens this modal.
+	 * admin.js fills the title, description and link from the row's
+	 * data-cev-pro-* attributes. Markup is the library's `.zui-modal`.
+	 *
+	 * @return void
+	 */
+	public function render_pro_feature_modal() {
+		?>
+		<div class="zui-modal" id="cev-pro-feature-modal" hidden role="dialog" aria-modal="true" aria-labelledby="cev-pro-feature-modal-title">
+			<div class="zui-modal__backdrop" data-zui-modal-close></div>
+			<div class="zui-modal__dialog">
+				<div class="zui-modal__head">
+					<div>
+						<h3 class="zui-modal__title" id="cev-pro-feature-modal-title"></h3>
+						<p class="zui-modal__sub"><?php esc_html_e( 'Available in CEV PRO', 'customer-email-verification-for-woocommerce' ); ?></p>
+					</div>
+					<button type="button" class="zui-modal__close" data-zui-modal-close aria-label="<?php esc_attr_e( 'Close', 'customer-email-verification-for-woocommerce' ); ?>">
+						<svg class="zui-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+					</button>
+				</div>
+				<div class="zui-modal__body">
+					<p class="cev-pro-feature-modal__desc"></p>
+				</div>
+				<div class="zui-modal__foot">
+					<div class="zui-modal__actions">
+						<button type="button" class="zui-btn-ghost" data-zui-modal-close><?php esc_html_e( 'Close', 'customer-email-verification-for-woocommerce' ); ?></button>
+						<a class="zui-btn-primary cev-pro-feature-modal__cta" href="<?php echo esc_url( woo_customer_email_verification()->get_pro_upgrade_url( 'locked-option' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Upgrade to PRO', 'customer-email-verification-for-woocommerce' ); ?></a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
@@ -1410,15 +1804,15 @@ class WC_Customer_Email_Verification_Admin {
 	 *
 	 * - `desc` rows render as `.cev-row__subheader` (no card row, no control).
 	 * - `separator` rows render as `.zui-row-divider`.
-	 * - PRO-locked rows render `.zui-row--inline` with the `cev-pro-tag`
-	 *   cluster in the control slot (no real input).
+	 * - PRO-locked rows render `.zui-row--inline` with a disabled control +
+	 *   PRO badge + lock chip in the control slot (no real input).
 	 * - FREE rows render the real control via a small per-type switch.
 	 *
 	 * @param string $key
 	 * @param array  $field
 	 * @return void
 	 */
-	public function render_field_by_type( $key, $field ) {
+	public function render_field_by_type( $key, $field, $section = '' ) {
 		// Fields flagged `hidden => true` are conditional children that Pro
 		// hides until their parent toggle is enabled. The Free build can
 		// never enable the parent (it's PRO-locked), so the child stays
@@ -1449,8 +1843,50 @@ class WC_Customer_Email_Verification_Admin {
 			return;
 		}
 
+		$cev_pro_attrs     = '';
+		$cev_lock_sections = $this->get_cev_lock_section_data();
+		// Rows in a fully locked section sit in the inert preview under the
+		// unlock card, so only rows in partly free sections become clickable.
+		if ( $cev_is_pro && ! isset( $cev_lock_sections[ $section ] ) ) {
+			// Lets admin.js open the "Available in CEV PRO" modal for this row.
+			$cev_pro_attrs = sprintf(
+				' role="button" tabindex="0" data-cev-pro-title="%1$s" data-cev-pro-desc="%2$s" data-cev-pro-url="%3$s"',
+				esc_attr( $cev_title ),
+				esc_attr( $cev_tooltip ),
+				esc_url( woo_customer_email_verification()->get_pro_upgrade_url( $this->get_cev_locked_content_slug( $section ) ) )
+			);
+		}
+		// AST Free pattern: a PRO option inside a free section shows a disabled
+		// control + PRO badge + lock chip; rows inside a fully locked section
+		// (the preview under the unlock card) show only the disabled control.
+		$cev_in_locked_section = $cev_is_pro && isset( $cev_lock_sections[ $section ] );
+		$cev_row_class         = '';
+		if ( $cev_is_pro ) {
+			$cev_row_class = $cev_in_locked_section ? ' cev-pro-locked-field cev-locked-row' : ' cev-pro-locked-field cev-pro-feature-row';
+		}
+
+		// Smart Form widgets that draw their own heading (same as CEV PRO):
+		// one full-width row with no label/control split.
+		if ( $cev_is_pro && in_array( $cev_type, array( 'shortcode', 'toggle_select', 'sms_gateway' ), true ) ) {
+			?>
+			<div class="zui-row zui-row--flush<?php echo esc_attr( $cev_row_class ); ?>">
+				<div class="zui-row__control">
+					<?php $this->render_pro_locked_control( $cev_type, false, $field ); ?>
+				</div>
+			</div>
+			<?php
+			return;
+		}
+
+		// The template picker sits below its label instead of beside it.
+		$cev_row_layout = ( 'template_picker' === $cev_type ) ? ' cev-row--stacked' : ' zui-row--inline';
 		?>
-		<div class="zui-row zui-row--inline<?php echo $cev_is_pro ? ' cev-pro-locked-field' : ''; ?>">
+		<div class="zui-row<?php echo esc_attr( $cev_row_layout . $cev_row_class ); ?>"
+			<?php
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Each attribute value is escaped with esc_attr()/esc_url() when built above.
+			echo $cev_pro_attrs;
+			?>
+		>
 			<div class="zui-row__head">
 				<span class="zui-row__label">
 					<?php echo esc_html( $cev_title ); ?>
@@ -1465,7 +1901,7 @@ class WC_Customer_Email_Verification_Admin {
 			<div class="zui-row__control">
 				<?php
 				if ( $cev_is_pro ) {
-					$this->render_pro_locked_control();
+					$this->render_pro_locked_control( $cev_type, ! $cev_in_locked_section, $field );
 				} else {
 					$this->render_free_control( $key, $field );
 				}
@@ -1476,16 +1912,277 @@ class WC_Customer_Email_Verification_Admin {
 	}
 
 	/**
-	 * Output the PRO badge + lock cluster used in every locked control slot.
+	 * Output the control slot of a PRO-locked row (same pattern as AST Free).
+	 *
+	 * Renders a disabled preview of the real control, optionally followed by
+	 * the library's PRO badge + lock chip (`.zui-pro-feature`). Smart Form
+	 * widgets (segmented choice, template picker, method groups, shortcode
+	 * callout, SMS gateway) mirror the CEV PRO markup; `$field['preview']`
+	 * sets the value each one displays.
+	 *
+	 * @param string $type       Field type from the settings schema.
+	 * @param bool   $with_badge Show the PRO badge + lock chip.
+	 * @param array  $field      Field definition (options / preview values).
+	 * @return void
+	 */
+	public function render_pro_locked_control( $type = 'toogel', $with_badge = true, $field = array() ) {
+		$cev_chevron = '<svg class="zui-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg>';
+		$cev_preview = isset( $field['preview'] ) ? $field['preview'] : '';
+		$cev_options = ( isset( $field['options'] ) && is_array( $field['options'] ) ) ? $field['options'] : array();
+
+		if ( 'segmented' === $type ) {
+			$cev_active = '' !== $cev_preview ? (string) $cev_preview : (string) key( $cev_options );
+			?>
+			<div class="zui-segmented cev-segmented--locked" role="tablist" aria-disabled="true">
+				<?php foreach ( $cev_options as $cev_opt_value => $cev_opt_label ) : ?>
+					<?php $cev_is_active = ( (string) $cev_opt_value === $cev_active ); ?>
+					<button type="button" class="zui-segmented__item<?php echo $cev_is_active ? ' is-active' : ''; ?>" role="tab" aria-selected="<?php echo $cev_is_active ? 'true' : 'false'; ?>" disabled><?php echo esc_html( $cev_opt_label ); ?></button>
+				<?php endforeach; ?>
+			</div>
+			<?php
+		} elseif ( 'template_picker' === $type ) {
+			$this->render_smart_template_picker( '' !== $cev_preview ? (string) $cev_preview : 'template1' );
+		} elseif ( 'toggle_select' === $type ) {
+			$cev_selected = array_filter( array_map( 'trim', explode( ',', (string) $cev_preview ) ) );
+			$cev_heading  = isset( $field['title'] ) ? $field['title'] : '';
+			$cev_tip      = isset( $field['tooltip'] ) ? $field['tooltip'] : '';
+			?>
+			<div class="cev-method-card">
+				<span class="cev-group-title">
+					<?php echo esc_html( $cev_heading ); ?>
+					<?php if ( '' !== $cev_tip ) : ?>
+						<span class="zui-tooltip" tabindex="0" role="img" aria-label="<?php echo esc_attr( $cev_tip ); ?>"><svg class="zui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span class="zui-tooltip__bubble"><?php echo esc_html( $cev_tip ); ?><span class="zui-tooltip__arrow"></span></span></span>
+					<?php endif; ?>
+				</span>
+				<div class="cev-method-list">
+					<?php foreach ( $cev_options as $cev_opt_value => $cev_opt ) : ?>
+						<div class="cev-method-item">
+							<span class="cev-method-item__text">
+								<span class="cev-method-item__label"><?php echo esc_html( isset( $cev_opt['label'] ) ? $cev_opt['label'] : '' ); ?></span>
+								<?php if ( ! empty( $cev_opt['desc'] ) ) : ?>
+									<span class="cev-method-item__desc"><?php echo esc_html( $cev_opt['desc'] ); ?></span>
+								<?php endif; ?>
+							</span>
+							<?php $this->render_locked_toggle( in_array( (string) $cev_opt_value, $cev_selected, true ) ); ?>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</div>
+			<?php
+		} elseif ( 'shortcode' === $type ) {
+			?>
+			<div class="cev-shortcode-callout">
+				<div class="cev-shortcode-callout__head">
+					<span class="cev-shortcode-callout__icon" aria-hidden="true">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+					</span>
+					<span class="cev-shortcode-callout__text">
+						<strong class="cev-shortcode-callout__title"><?php echo esc_html( isset( $field['title'] ) ? $field['title'] : '' ); ?></strong>
+						<?php if ( ! empty( $field['description'] ) ) : ?>
+							<span class="cev-shortcode-callout__desc"><?php echo esc_html( $field['description'] ); ?></span>
+						<?php endif; ?>
+					</span>
+				</div>
+				<div class="cev-shortcode-callout__row">
+					<code class="cev-shortcode-chip"><?php echo esc_html( isset( $field['shortcode'] ) ? $field['shortcode'] : '' ); ?></code>
+					<button type="button" class="cev-shortcode-copy" disabled aria-disabled="true"><?php esc_html_e( 'Copy', 'customer-email-verification-for-woocommerce' ); ?></button>
+				</div>
+			</div>
+			<?php
+		} elseif ( 'sms_gateway' === $type ) {
+			$this->render_smart_sms_gateway( $field );
+		} elseif ( in_array( $type, array( 'dropdown', 'checkbox_select' ), true ) ) {
+			?>
+			<div class="zui-select-wrap">
+				<select class="zui-select" disabled aria-disabled="true"><option><?php echo esc_html( $cev_preview ); ?></option></select>
+				<span class="zui-select-chevron">
+					<?php
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Constant SVG markup.
+					echo $cev_chevron;
+					?>
+				</span>
+			</div>
+			<?php
+		} elseif ( in_array( $type, array( 'textarea', 'category_messages' ), true ) ) {
+			?>
+			<textarea class="zui-textarea zui-input" rows="2" disabled aria-disabled="true"></textarea>
+			<?php
+		} elseif ( 'multiple_select' === $type ) {
+			?>
+			<div class="zui-ms is-disabled" aria-disabled="true">
+				<div class="zui-ms__control" tabindex="-1" role="combobox" aria-disabled="true" aria-expanded="false">
+					<div class="zui-ms__chips"><span class="zui-ms__placeholder">&nbsp;</span></div>
+					<span class="zui-ms__chevron">
+						<?php
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Constant SVG markup.
+						echo $cev_chevron;
+						?>
+					</span>
+				</div>
+			</div>
+			<?php
+		} elseif ( 'text' === $type ) {
+			?>
+			<input type="text" class="zui-input" disabled aria-disabled="true" />
+			<?php
+		} elseif ( 'button' === $type ) {
+			?>
+			<button type="button" class="zui-btn-secondary" disabled aria-disabled="true"><?php esc_html_e( 'Run now', 'customer-email-verification-for-woocommerce' ); ?></button>
+			<?php
+		} else {
+			// Toggles and anything else preview as a switch.
+			$this->render_locked_toggle( ! empty( $cev_preview ) );
+		}
+
+		if ( $with_badge ) {
+			?>
+			<span class="zui-pro-feature">
+				<span class="zui-pro-feature__badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
+				<span class="zui-pro-feature__lock" aria-hidden="true"><svg class="zui-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+			</span>
+			<?php
+		}
+	}
+
+	/**
+	 * Output a disabled ZUI toggle switch.
+	 *
+	 * @param bool $is_on Show the switch in the on position.
+	 * @return void
+	 */
+	public function render_locked_toggle( $is_on = false ) {
+		?>
+		<label class="zui-toggle" aria-disabled="true">
+			<input type="checkbox" class="zui-toggle__input" disabled<?php echo $is_on ? ' checked' : ''; ?>>
+			<span class="zui-toggle__track"><span class="zui-toggle__thumb"></span></span>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Output the Smart Form template picker preview (four cards with mini
+	 * wireframes), same markup as CEV PRO but with disabled radios.
+	 *
+	 * @param string $selected Template key shown as selected.
+	 * @return void
+	 */
+	public function render_smart_template_picker( $selected = 'template1' ) {
+		$cev_templates = array(
+			'template1' => array(
+				'name'  => __( 'Template 1 — Tabbed card', 'customer-email-verification-for-woocommerce' ),
+				'title' => __( 'Tabbed login & register', 'customer-email-verification-for-woocommerce' ),
+				'desc'  => __( 'Bordered card with a brand top accent and underline tabs. The only tabbed template.', 'customer-email-verification-for-woocommerce' ),
+			),
+			'template2' => array(
+				'name'  => __( 'Template 2 — Split / brand panel', 'customer-email-verification-for-woocommerce' ),
+				'title' => __( 'Two-column hero', 'customer-email-verification-for-woocommerce' ),
+				'desc'  => __( 'Brand panel beside a single form. Switch with a link, no tabs.', 'customer-email-verification-for-woocommerce' ),
+			),
+			'template3' => array(
+				'name'  => __( 'Template 3 — Brand header banner', 'customer-email-verification-for-woocommerce' ),
+				'title' => __( 'Header banner', 'customer-email-verification-for-woocommerce' ),
+				'desc'  => __( 'Brand-colored header with the store name, form below. Switch with a link, no tabs.', 'customer-email-verification-for-woocommerce' ),
+			),
+			'template4' => array(
+				'name'  => __( 'Template 4 — Side-by-side', 'customer-email-verification-for-woocommerce' ),
+				'title' => __( 'Login & Register columns', 'customer-email-verification-for-woocommerce' ),
+				'desc'  => __( 'Both visible at once, side by side. No tabs.', 'customer-email-verification-for-woocommerce' ),
+			),
+		);
+
+		// Static wireframe markup per template (no user input).
+		$cev_wireframes = array(
+			'template1' => '<span class="cev-wf"><span class="cev-wf-card cev-wf-card--narrow cev-wf-card--accent"><span class="cev-wf-line cev-wf-line--logo-left"></span><span class="cev-wf-tabs cev-wf-tabs--underline"><span class="cev-wf-tab cev-wf-tab--on"></span><span class="cev-wf-tab"></span></span><span class="cev-wf-line"></span><span class="cev-wf-line"></span><span class="cev-wf-btn"></span></span></span>',
+			'template2' => '<span class="cev-wf cev-wf--split"><span class="cev-wf-brand"></span><span class="cev-wf-col"><span class="cev-wf-line"></span><span class="cev-wf-line cev-wf-line--half"></span><span class="cev-wf-btn"></span></span></span>',
+			'template3' => '<span class="cev-wf"><span class="cev-wf-card cev-wf-card--narrow"><span class="cev-wf-banner"></span><span class="cev-wf-line"></span><span class="cev-wf-line cev-wf-line--half"></span><span class="cev-wf-line"></span><span class="cev-wf-btn"></span></span></span>',
+			'template4' => '<span class="cev-wf cev-wf--cols"><span class="cev-wf-col"><span class="cev-wf-line cev-wf-line--half"></span><span class="cev-wf-line"></span><span class="cev-wf-btn"></span></span><span class="cev-wf-col cev-wf-col--divider"><span class="cev-wf-line cev-wf-line--half"></span><span class="cev-wf-line"></span><span class="cev-wf-btn"></span></span></span>',
+		);
+		?>
+		<div class="cev-tpl-grid">
+			<?php foreach ( $cev_templates as $cev_key => $cev_tpl ) : ?>
+				<label class="cev-tpl-card">
+					<input type="radio" class="cev-tpl-card__radio" disabled<?php echo ( $selected === $cev_key ) ? ' checked' : ''; ?> />
+					<span class="cev-tpl-card__bar">
+						<span class="cev-tpl-dot"></span>
+						<span class="cev-tpl-dot"></span>
+						<span class="cev-tpl-dot"></span>
+						<span class="cev-tpl-card__name"><?php echo esc_html( $cev_tpl['name'] ); ?></span>
+						<span class="cev-tpl-card__check" aria-hidden="true">&#10003;</span>
+					</span>
+					<span class="cev-tpl-card__canvas">
+						<?php
+						// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Constant wireframe markup from the static map above.
+						echo $cev_wireframes[ $cev_key ];
+						?>
+					</span>
+					<span class="cev-tpl-card__meta">
+						<strong><?php echo esc_html( $cev_tpl['title'] ); ?></strong>
+						<small><?php echo esc_html( $cev_tpl['desc'] ); ?></small>
+					</span>
+				</label>
+			<?php endforeach; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Output the Smart Form SMS gateway preview (provider + credential
+	 * fields), same layout as CEV PRO with every input disabled.
+	 *
+	 * @param array $field Field definition (title / description).
+	 * @return void
+	 */
+	public function render_smart_sms_gateway( $field = array() ) {
+		$cev_fields = array(
+			array( __( 'Access token', 'customer-email-verification-for-woocommerce' ), false ),
+			array( __( 'Namespace', 'customer-email-verification-for-woocommerce' ), false ),
+			array( __( 'Sender / Phone number ID', 'customer-email-verification-for-woocommerce' ), true ),
+		);
+		?>
+		<span class="cev-group-title"><?php echo esc_html( isset( $field['title'] ) ? $field['title'] : '' ); ?></span>
+		<?php if ( ! empty( $field['description'] ) ) : ?>
+			<p class="cev-sms__intro"><?php echo esc_html( $field['description'] ); ?></p>
+		<?php endif; ?>
+		<div class="cev-sms">
+			<div class="cev-sms-field cev-sms-field--full">
+				<span class="cev-sms-field__label"><?php esc_html_e( 'SMS provider', 'customer-email-verification-for-woocommerce' ); ?></span>
+				<div class="zui-select-wrap">
+					<select class="zui-select" disabled aria-disabled="true">
+						<option><?php esc_html_e( 'WhatsApp Business', 'customer-email-verification-for-woocommerce' ); ?></option>
+					</select>
+					<span class="zui-select-chevron"><svg class="zui-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"/></svg></span>
+				</div>
+				<span class="cev-sms-field__hint"><?php esc_html_e( 'WhatsApp Business, Twilio, Vonage (Nexmo) or MSG91.', 'customer-email-verification-for-woocommerce' ); ?></span>
+			</div>
+			<div class="cev-sms__divider"></div>
+			<div class="cev-sms-grid">
+				<?php foreach ( $cev_fields as $cev_sms_field ) : ?>
+					<div class="cev-sms-field<?php echo $cev_sms_field[1] ? ' cev-sms-field--full' : ''; ?>">
+						<span class="cev-sms-field__label"><?php echo esc_html( $cev_sms_field[0] ); ?></span>
+						<input type="text" class="zui-input" disabled aria-disabled="true" />
+					</div>
+				<?php endforeach; ?>
+			</div>
+			<div class="cev-sms__toggle-row">
+				<span class="cev-sms-field__label"><?php esc_html_e( 'Send a test SMS', 'customer-email-verification-for-woocommerce' ); ?></span>
+				<button type="button" class="zui-btn-secondary" disabled aria-disabled="true"><?php esc_html_e( 'Send test SMS', 'customer-email-verification-for-woocommerce' ); ?></button>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Output the Smart Form unlock card and the read-only preview of its
+	 * options, below the Signup Verification settings card.
 	 *
 	 * @return void
 	 */
-	public function render_pro_locked_control() {
+	public function render_smart_form_lock() {
+		$this->render_lock_section( 'smart_form' );
 		?>
-		<span class="cev-pro-tag">
-			<span class="cev-pro-badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
-			<span class="cev-pro-lock-icon"><svg class="cev-pro-lock-svg" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-		</span>
+		<div class="zui-card zui-lock-section__preview cev-smart-preview" aria-hidden="true">
+			<?php $this->render_settings_fields( $this->get_cev_smart_form_settings_data(), 'smart_form' ); ?>
+		</div>
 		<?php
 	}
 
@@ -1602,10 +2299,15 @@ class WC_Customer_Email_Verification_Admin {
 	
 	public function cev_manualy_user_verify_in_user_menu() {
 		
-		if ( isset( $_POST['wp_nonce'] ) && wp_verify_nonce( wc_clean( $_POST['wp_nonce'] ), 'wc_cev_email' ) ) { 
+		if ( isset( $_POST['wp_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wp_nonce'] ) ), 'wc_cev_email' ) ) { 
 		
-			$user_id = isset( $_POST['id'] ) ? wc_clean( $_POST['id'] ) : '';
-			$action_type = isset( $_POST['actin_type'] ) ? wc_clean( $_POST['actin_type'] ) : '';
+			$user_id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+			$action_type = isset( $_POST['actin_type'] ) ? sanitize_text_field( wp_unslash( $_POST['actin_type'] ) ) : '';
+
+			// Only users who may edit this account can change its verification status.
+			if ( ! current_user_can( 'edit_user', absint( $user_id ) ) ) {
+				exit;
+			}
 			
 			if ( 'unverify_user' == $action_type ) {
 				delete_user_meta( $user_id, 'customer_email_verified' ); 
@@ -1620,7 +2322,7 @@ class WC_Customer_Email_Verification_Admin {
 				$is_secret_code_present = get_user_meta( $user_id, 'customer_email_verification_code', true );
 	
 				if ( '' === $is_secret_code_present ) {
-					$secret_code = md5( $user_id . time() );
+					$secret_code = wp_generate_password( 32, false, false );
 					update_user_meta( $user_id, 'customer_email_verification_code', $secret_code );
 				}					
 				
@@ -1638,11 +2340,20 @@ class WC_Customer_Email_Verification_Admin {
 	 */
 	public function cev_manual_verify_user() {
 		
-		if ( isset( $_GET['user_id'] ) && isset( $_GET['wp_nonce'] ) && wp_verify_nonce( wc_clean( $_GET['wp_nonce'] ), 'wc_cev_email' ) ) {
+		if ( isset( $_GET['user_id'] ) && isset( $_GET['wp_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['wp_nonce'] ) ), 'wc_cev_email' ) ) {
 			
-			$user_id = wc_clean( $_GET['user_id'] );
+			$user_id = sanitize_text_field( wp_unslash( $_GET['user_id'] ) );
+
+			// Only users who may edit this account can change its verification status.
+			if ( ! current_user_can( 'edit_user', absint( $user_id ) ) ) {
+				return;
+			}
 			
-			if ( isset( $_GET['wc_cev_confirm'] ) && 'true' === $_GET['wc_cev_confirm'] ) { 
+			// Nonce for this request already verified above.
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+			$cev_confirm = isset( $_GET['wc_cev_confirm'] ) ? sanitize_text_field( wp_unslash( $_GET['wc_cev_confirm'] ) ) : '';
+
+			if ( 'true' === $cev_confirm ) { 
 				
 				update_user_meta( $user_id, 'customer_email_verified', 'true' );
 				add_action( 'admin_notices', array( $this, 'manual_cev_verify_email_success_admin' ) );
@@ -1653,12 +2364,12 @@ class WC_Customer_Email_Verification_Admin {
 			}				
 		}
 		
-		if ( isset( $user_id ) && isset( $_GET['wp_nonce'] ) && wp_verify_nonce( wc_clean( $_GET['wp_nonce'] ), 'wc_cev_email_confirmation' ) ) {			
+		if ( isset( $user_id ) && current_user_can( 'edit_user', absint( $user_id ) ) && isset( $_GET['wp_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['wp_nonce'] ) ), 'wc_cev_email_confirmation' ) ) {			
 			$current_user           = get_user_by( 'id', $user_id );
 			$is_secret_code_present = get_user_meta( $user_id, 'customer_email_verification_code', true );
 
 			if ( '' === $is_secret_code_present ) {
-				$secret_code = md5( $user_id . time() );
+				$secret_code = wp_generate_password( 32, false, false );
 				update_user_meta( $user_id, 'customer_email_verification_code', $secret_code );
 			}					
 			
@@ -1767,8 +2478,11 @@ class WC_Customer_Email_Verification_Admin {
 
 	public function filter_user_by_verified( $which ) {
 		if ( 'top' === $which ) {
-			$top = ( isset($_GET['customer_email_verified_top']) ) ? wc_clean( $_GET['customer_email_verified_top'] ) : null;
-			$bottom = ( isset($_GET['customer_email_verified_bottom']) ) ? wc_clean( $_GET['customer_email_verified_bottom'] ) : null;	
+			// Users-list filter values from the admin table, not form processing.
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+			$top = ( isset($_GET['customer_email_verified_top']) ) ? sanitize_text_field( wp_unslash( $_GET['customer_email_verified_top'] ) ) : null;
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+			$bottom = ( isset($_GET['customer_email_verified_bottom']) ) ? sanitize_text_field( wp_unslash( $_GET['customer_email_verified_bottom'] ) ) : null;	
 			
 			$true_selected = '';
 			$false_selected = '';
@@ -1785,13 +2499,13 @@ class WC_Customer_Email_Verification_Admin {
 			}
 
 			?>
-			<select name="customer_email_verified_<?php esc_html_e( $which ); ?>" style="float:none;margin-left:10px;">
+			<select name="customer_email_verified_<?php echo esc_attr( $which ); ?>" style="float:none;margin-left:10px;">
 				<option value=''><?php esc_html_e( 'User verification', 'customer-email-verification-for-woocommerce' ); ?></option>
-				<option <?php esc_html_e( $true_selected ); ?> value='true'><?php esc_html_e( 'Verified', 'customer-email-verification-for-woocommerce' ); ?></option>
-				<option <?php esc_html_e( $false_selected ); ?> value='false'><?php esc_html_e( 'Non verified', 'customer-email-verification-for-woocommerce' ); ?></option>
+				<option <?php echo esc_attr( $true_selected ); ?> value='true'><?php esc_html_e( 'Verified', 'customer-email-verification-for-woocommerce' ); ?></option>
+				<option <?php echo esc_attr( $false_selected ); ?> value='false'><?php esc_html_e( 'Non verified', 'customer-email-verification-for-woocommerce' ); ?></option>
 			</select>
 			<?php
-			submit_button( __( 'Filter' ), '', $which, false );
+			submit_button( __( 'Filter', 'customer-email-verification-for-woocommerce' ), '', $which, false );
 		
 		}
 		
@@ -1803,12 +2517,21 @@ class WC_Customer_Email_Verification_Admin {
 		if ( is_admin() && 'users.php' == $pagenow ) {
 			
 			// figure out which button was clicked. The $which in filter_by_job_role()
-			if ( isset( $_GET['customer_email_verified_top'] ) ) {
-				$top = wc_clean( $_GET['customer_email_verified_top'] ) ? wc_clean( $_GET['customer_email_verified_top'] ) : null;
+			$top    = '';
+			$bottom = '';
+
+			// Users-list filter values from the admin table, not form processing.
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+			$cev_filter_top = isset( $_GET['customer_email_verified_top'] ) ? sanitize_text_field( wp_unslash( $_GET['customer_email_verified_top'] ) ) : '';
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+			$cev_filter_bottom = isset( $_GET['customer_email_verified_bottom'] ) ? sanitize_text_field( wp_unslash( $_GET['customer_email_verified_bottom'] ) ) : '';
+
+			if ( '' !== $cev_filter_top ) {
+				$top = $cev_filter_top;
 			}
-			
-			if ( isset( $_GET['customer_email_verified_bottom'] ) ) {
-				$bottom = wc_clean( $_GET['customer_email_verified_bottom'] ) ? wc_clean( $_GET['customer_email_verified_bottom'] ) : null;
+
+			if ( '' !== $cev_filter_bottom ) {
+				$bottom = $cev_filter_bottom;
 			}
 			
 			if ( !empty( $top ) || !empty( $bottom ) ) {
@@ -1877,7 +2600,7 @@ class WC_Customer_Email_Verification_Admin {
 				$is_secret_code_present                = get_user_meta( $this->user_id, 'customer_email_verification_code', true );
 		
 				if ( '' === $is_secret_code_present ) {
-					$secret_code = md5( $this->user_id . time() );
+					$secret_code = wp_generate_password( 32, false, false );
 					update_user_meta( $user_id, 'customer_email_verification_code', $secret_code );
 				}
 				
@@ -1897,25 +2620,34 @@ class WC_Customer_Email_Verification_Admin {
 	}
  
 	public function user_bulk_action_notices() {
-	 
-		if ( ! empty( $_REQUEST['verify_users_emails'] ) ) {			
-			printf( '<div id="message" class="updated notice is-dismissible"><p>' .
-				/* translators: %s: replace with email */
-				esc_html( _n( 'Verification Status updated for  %s user.',
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$cev_verified_count = isset( $_REQUEST['verify_users_emails'] ) ? intval( $_REQUEST['verify_users_emails'] ) : 0;
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$cev_emailed_count = isset( $_REQUEST['send_verification_emails'] ) ? intval( $_REQUEST['send_verification_emails'] ) : 0;
+
+		if ( 0 < $cev_verified_count ) {
+			/* translators: %s: number of users whose verification status was updated. */
+			$cev_notice = _n(
+				'Verification Status updated for  %s user.',
 				'Verification Status updated for  %s users.',
-				intval( $_REQUEST['verify_users_emails'] )
-			) ) . '</p></div>', intval( $_REQUEST['verify_users_emails'] ) );
+				$cev_verified_count,
+				'customer-email-verification-for-woocommerce'
+			);
+			echo '<div id="message" class="updated notice is-dismissible"><p>' . esc_html( sprintf( $cev_notice, $cev_verified_count ) ) . '</p></div>';
 		}
-	 
-		if ( ! empty( $_REQUEST['send_verification_emails'] ) ) {			
-			printf( '<div id="message" class="updated notice is-dismissible"><p>' .
-				/* translators: %s: replace with email */
-				esc_html( _n( 'Verification email sent to %s user.',
+
+		if ( 0 < $cev_emailed_count ) {
+			/* translators: %s: number of users the verification email was sent to. */
+			$cev_notice = _n(
+				'Verification email sent to %s user.',
 				'Verification email sent to %s users.',
-				intval( $_REQUEST['send_verification_emails'] )
-			) ) . '</p></div>', intval( $_REQUEST['send_verification_emails'] ) );
-	 
+				$cev_emailed_count,
+				'customer-email-verification-for-woocommerce'
+			);
+			echo '<div id="message" class="updated notice is-dismissible"><p>' . esc_html( sprintf( $cev_notice, $cev_emailed_count ) ) . '</p></div>';
 		}
-	 
+
 	}	
 }

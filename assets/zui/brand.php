@@ -5,22 +5,28 @@
  * Single source of truth for the header brand cluster (emblem icon + name +
  * "PRO" badge + tagline) for every Zorem plugin that consumes this library.
  * A consumer plugin renders its own brand by calling
- * `zui_get_plugin_brand( plugin_basename( $main_file ) )` and feeding the
- * returned array into the canonical `.zui-brand` markup.
+ * `\Zorem\UI\get_plugin_brand( plugin_basename( $main_file ) )` and feeding
+ * the returned array into the canonical `.zui-brand` markup.
  *
  * Registering a new plugin: add an entry below keyed by its main-file
  * basename (e.g. `'my-plugin/my-plugin.php'`). No consumer-side code
  * changes required after that.
  *
+ * Since 1.9.2 the resolver lives in the `Zorem\UI` namespace (was global
+ * `zui_get_plugin_brand()`). Consumer templates must update call sites;
+ * there is no backward-compat shim.
+ *
  * @package Zorem_UI
  * @since   1.6.0
  */
+
+namespace Zorem\UI;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! function_exists( 'zui_get_plugin_brand' ) ) {
+if ( ! function_exists( __NAMESPACE__ . '\\get_plugin_brand' ) ) {
 	/**
 	 * Return the chrome brand info for a given plugin slug.
 	 *
@@ -31,14 +37,14 @@ if ( ! function_exists( 'zui_get_plugin_brand' ) ) {
 	 *  - name         (string) Three-letter plugin acronym shown in the header.
 	 *  - badge        (string) Short uppercase pill (typically "PRO").
 	 *  - tagline      (string) One-line description shown after the badge.
-	 *  - icon         (string) `zui_icon()` key rendered inside the emblem.
+	 *  - icon         (string) `\Zorem\UI\icon()` key rendered inside the emblem.
 	 *  - emblem_bg    (string) Hex color piped into `--zui-brand-emblem-bg`.
 	 *  - emblem_color (string) Hex color piped into `--zui-brand-emblem-color`.
 	 *
 	 * @param string $slug Plugin main-file basename, e.g. 'ast-pro/ast-pro.php'.
 	 * @return array|null
 	 */
-	function zui_get_plugin_brand( $slug ) {
+	function get_plugin_brand( $slug ) {
 		$brands = array(
 			'ast-pro/ast-pro.php' => array(
 				'name'         => 'AST',

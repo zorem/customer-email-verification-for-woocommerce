@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Cev_admin class.
  */
+// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedClassFound -- Established public API of this plugin; renaming breaks CEV PRO and customer code.
 class WC_Customer_Email_Verification_Customize {
 
 	/**

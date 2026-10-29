@@ -1,4 +1,8 @@
 <?php
+// This template is include()d from inside a class method, so the variables
+// below are function-scoped, not globals. PHPCS analyses the file in isolation
+// and cannot see that, hence the false positives.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 /**
  * Admin Page Header (ZUI shell)
  *

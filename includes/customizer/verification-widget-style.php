@@ -1,4 +1,8 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 /**
  * Customizer Setup and Custom Controls
  *
@@ -22,7 +26,11 @@ class Cev_Verification_Widget_Style {
 	 * @return bool
 	 */
 	public static function is_own_preview_request() {
-		return isset( $_REQUEST['action'] ) && 'preview_cev_verification_lightbox' === $_REQUEST['action'];
+		// Read-only screen/preview check, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$cev_action = isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '';
+
+		return 'preview_cev_verification_lightbox' === $cev_action;
 	}
 	
 	/**
@@ -31,7 +39,11 @@ class Cev_Verification_Widget_Style {
 	 * @return bool
 	 */
 	public static function is_own_customizer_request() {
-		return isset( $_REQUEST['section'] ) && 'cev_verification_widget_style' === $_REQUEST['section'];
+		// Read-only screen/preview check, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$cev_section = isset( $_REQUEST['section'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['section'] ) ) : '';
+
+		return 'cev_verification_widget_style' === $cev_section;
 	}		
 }
 
@@ -39,4 +51,4 @@ class Cev_Verification_Widget_Style {
  * Initialise our Customizer settings
  */
 
-$cev_verification_widget_style = new Cev_Verification_Widget_Style();
+new Cev_Verification_Widget_Style();

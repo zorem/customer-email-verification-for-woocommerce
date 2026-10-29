@@ -1,4 +1,8 @@
 <?php
+// This template is include()d from inside a class method, so the variables
+// below are function-scoped, not globals. PHPCS analyses the file in isolation
+// and cannot see that, hence the false positives.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 /**
  * Settings tab body (ZUI redesign, schema-driven).
  *
@@ -6,10 +10,10 @@
  * (Signup Verification / Checkout Verification / General / Login
  * Authentication / Two-Factor Authentication / Spam Protection /
  * Advanced) and every field from the Pro schema. Pro-only fields render
- * as the `cev-pro-tag` cluster (badge + lock icon, no real control);
+ * as a disabled control + PRO badge + lock chip (same as AST Free);
  * Free fields render real working controls.
  *
- * Pro-only sidebar items carry the same PRO badge + lock cluster but
+ * Pro-only sidebar items carry a PRO badge (library .zui-sidebar__badge) but
  * stay clickable so users can navigate into a locked section and see
  * which features are available in the Pro version.
  *
@@ -52,40 +56,12 @@ $cev_render_icon = function ( $name ) use ( $cev_icons ) {
 	return '<svg class="zui-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $cev_d . '</svg>';
 };
 
-$cev_lock_svg = '<svg class="cev-pro-lock-svg" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-
-// Check icon at stroke-width="3" as used by the ZUI upsell panel component.
-$cev_upsell_check_svg = '<svg class="zui-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
 $cev_print = function ( $html ) {
 	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Callers pass SVG built from constant maps with no user input.
 	echo $html;
 };
 
-// PRO promo card — feature checklist.
-$cev_pro_features = array(
-	array( 'label' => __( 'Email verification at checkout', 'customer-email-verification-for-woocommerce' ),         'is_new' => false ),
-	array( 'label' => __( 'OTP-based login authentication', 'customer-email-verification-for-woocommerce' ),         'is_new' => false ),
-	array( 'label' => __( 'OTP expiration & resend limits', 'customer-email-verification-for-woocommerce' ),         'is_new' => false ),
-	array( 'label' => __( 'Unrecognized login detection', 'customer-email-verification-for-woocommerce' ),           'is_new' => false ),
-	array( 'label' => __( 'Fully customizable verification emails', 'customer-email-verification-for-woocommerce' ), 'is_new' => false ),
-	array( 'label' => __( '2FA via Authenticator App', 'customer-email-verification-for-woocommerce' ),              'is_new' => false ),
-	array( 'label' => __( 'Role-based verification rules', 'customer-email-verification-for-woocommerce' ),          'is_new' => false ),
-	array( 'label' => __( 'Verification analytics dashboard', 'customer-email-verification-for-woocommerce' ),       'is_new' => false ),
-	array( 'label' => __( 'Disposable email blocking (3,000+)', 'customer-email-verification-for-woocommerce' ),     'is_new' => false ),
-	array( 'label' => __( 'DNS-based MX validation', 'customer-email-verification-for-woocommerce' ),                'is_new' => false ),
-	array( 'label' => __( 'B2B allowlist mode', 'customer-email-verification-for-woocommerce' ),                     'is_new' => false ),
-	array( 'label' => __( 'Block specific email addresses', 'customer-email-verification-for-woocommerce' ),         'is_new' => false ),
-	array( 'label' => __( 'Auto-delete unverified users', 'customer-email-verification-for-woocommerce' ),           'is_new' => false ),
-	array( 'label' => __( 'Re-engagement reminder emails', 'customer-email-verification-for-woocommerce' ),          'is_new' => false ),
-	array( 'label' => __( 'Smart Form — 4 branded templates', 'customer-email-verification-for-woocommerce' ),       'is_new' => true ),
-	array( 'label' => __( 'Phone (SMS) verification', 'customer-email-verification-for-woocommerce' ),               'is_new' => true ),
-	array( 'label' => __( 'Paid-Order Gatekeeping', 'customer-email-verification-for-woocommerce' ),                 'is_new' => true ),
-	array( 'label' => __( 'Force re-verify all customers', 'customer-email-verification-for-woocommerce' ),          'is_new' => true ),
-	array( 'label' => __( 'Polylang compatibility', 'customer-email-verification-for-woocommerce' ),                 'is_new' => true ),
-);
-
-$cev_upgrade_url = 'https://www.zorem.com/product/customer-email-verification/';
 $cev_docs_url    = 'https://docs.zorem.com/docs/customer-email-verification-free/';
 $cev_support_url = 'https://www.zorem.com/support/';
 
@@ -111,10 +87,7 @@ foreach ( $cev_sections as $cev_slug => $cev_meta ) {
 					<span class="zui-sidebar__icon"><?php $cev_print( $cev_render_icon( $cev_meta['icon'] ) ); ?></span>
 					<span class="zui-sidebar__label"><?php echo esc_html( $cev_meta['label'] ); ?></span>
 					<?php if ( $cev_is_pro ) : ?>
-						<span class="cev-pro-tag">
-							<span class="cev-pro-badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
-							<span class="cev-pro-lock-icon"><?php $cev_print( $cev_lock_svg ); ?></span>
-						</span>
+						<span class="zui-sidebar__badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
 					<?php endif; ?>
 				</button>
 			<?php endforeach; ?>
@@ -161,6 +134,48 @@ foreach ( $cev_sections as $cev_slug => $cev_meta ) {
 
 	<main class="zui-content">
 
+		<?php
+		// Setup checklist (B5): shown until every step is done or it is hidden.
+		$cev_checklist      = $admin_instance->get_cev_setup_checklist();
+		$cev_checklist_done = count( array_filter( wp_list_pluck( $cev_checklist, 'done' ) ) );
+		$cev_show_checklist = ! get_option( 'cev_checklist_dismissed' ) && $cev_checklist_done < count( $cev_checklist );
+		?>
+		<?php if ( $cev_show_checklist ) : ?>
+			<div class="zui-card cev-setup-checklist" id="cev-setup-checklist">
+				<div class="zui-card__head">
+					<h3 class="zui-card__title"><?php esc_html_e( 'Get started with email verification', 'customer-email-verification-for-woocommerce' ); ?></h3>
+					<p class="zui-card__sub">
+						<?php
+						/* translators: 1: number of completed steps, 2: total number of steps. */
+						$cev_progress = sprintf( __( '%1$d of %2$d steps done', 'customer-email-verification-for-woocommerce' ), $cev_checklist_done, count( $cev_checklist ) );
+						echo esc_html( $cev_progress );
+						?>
+					</p>
+				</div>
+				<?php foreach ( $cev_checklist as $cev_step_key => $cev_step ) : ?>
+					<div class="zui-row zui-row--inline">
+						<div class="zui-row__head">
+							<span class="zui-row__label"><?php echo esc_html( $cev_step['label'] ); ?></span>
+						</div>
+						<div class="zui-row__control">
+							<?php if ( $cev_step['done'] ) : ?>
+								<span class="cev-setup-checklist__done"><?php $cev_print( $cev_render_icon( 'check' ) ); ?> <?php esc_html_e( 'Done', 'customer-email-verification-for-woocommerce' ); ?></span>
+							<?php elseif ( 'test' === $cev_step_key ) : ?>
+								<button type="button" class="zui-btn-soft cev-send-test-email"><?php esc_html_e( 'Send test email', 'customer-email-verification-for-woocommerce' ); ?></button>
+							<?php elseif ( 'enable' === $cev_step_key ) : ?>
+								<span class="zui-row__desc"><?php esc_html_e( 'Use the switch below, then save.', 'customer-email-verification-for-woocommerce' ); ?></span>
+							<?php else : ?>
+								<a class="zui-btn-soft" href="<?php echo esc_url( $cev_step['url'] ); ?>"><?php esc_html_e( 'Open', 'customer-email-verification-for-woocommerce' ); ?></a>
+							<?php endif; ?>
+						</div>
+					</div>
+				<?php endforeach; ?>
+				<div class="zui-row">
+					<button type="button" class="zui-btn-ghost cev-dismiss-checklist"><?php esc_html_e( 'Hide checklist', 'customer-email-verification-for-woocommerce' ); ?></button>
+				</div>
+			</div>
+		<?php endif; ?>
+
 		<form method="post" id="cev_settings_form" action="" enctype="multipart/form-data">
 
 			<?php foreach ( $cev_sections as $cev_slug => $cev_meta ) :
@@ -179,25 +194,46 @@ foreach ( $cev_sections as $cev_slug => $cev_meta ) {
 							<div class="zui-section-header__text">
 								<div class="zui-section-header__titlewrap">
 									<h2 class="zui-section-header__title"><?php echo esc_html( $cev_section_label ); ?></h2>
+									<?php if ( $cev_section_pro ) : ?>
+										<span class="zui-section-header__badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
+									<?php endif; ?>
 								</div>
 								<p class="zui-section-header__sub"><?php echo esc_html( $cev_section_sub ); ?></p>
 							</div>
 						</div>
-						<?php if ( ! $cev_section_pro ) : ?>
-							<div class="zui-section-header__actions">
+						<div class="zui-section-header__actions">
+							<?php if ( $cev_section_pro ) : ?>
+								<button type="button" class="zui-savebtn zui-savebtn--inert" disabled aria-disabled="true">
+									<span class="zui-savebtn__label"><?php esc_html_e( 'Save changes', 'customer-email-verification-for-woocommerce' ); ?></span>
+								</button>
+							<?php else : ?>
 								<span class="zui-savebtn-wrap">
 									<button type="submit" class="zui-savebtn woocommerce-save-button cev_settings_save" name="save">
 										<span class="zui-savebtn__label"><?php esc_html_e( 'Save changes', 'customer-email-verification-for-woocommerce' ); ?></span>
 										<span class="zui-savebtn__spinner spinner"></span>
 									</button>
 								</span>
-							</div>
-						<?php endif; ?>
+							<?php endif; ?>
+						</div>
 					</div>
 
-					<div class="zui-card">
-						<?php $admin_instance->render_settings_fields( $cev_section_data ); ?>
+					<?php
+					// Fully PRO-only sections: upgrade card on top, then the real
+					// options as a dimmed read-only preview (library lock-section).
+					if ( $cev_section_pro ) {
+						$admin_instance->render_lock_section( $cev_slug );
+					}
+					?>
+					<div class="zui-card<?php echo $cev_section_pro ? ' zui-lock-section__preview' : ''; ?>"<?php echo $cev_section_pro ? ' aria-hidden="true"' : ''; ?>>
+						<?php $admin_instance->render_settings_fields( $cev_section_data, $cev_slug ); ?>
 					</div>
+
+					<?php
+					// Smart Form (PRO): unlock card + read-only preview of its options.
+					if ( 'signup_verification' === $cev_slug ) {
+						$admin_instance->render_smart_form_lock();
+					}
+					?>
 
 				</section>
 			<?php endforeach; ?>
@@ -206,54 +242,6 @@ foreach ( $cev_sections as $cev_slug => $cev_meta ) {
 			<input type="hidden" name="action" value="cev_settings_form_update" />
 
 		</form>
-
-		<?php /* ─── Full-width PRO promo — ZUI library upsell panel ─── */ ?>
-		<section class="zui-upsell" aria-labelledby="cev-upsell-title">
-
-			<header class="zui-upsell__head">
-				<span class="zui-upsell__emblem" aria-hidden="true"><?php $cev_print( $cev_render_icon( 'shield' ) ); ?></span>
-				<div class="zui-upsell__head-text">
-					<span class="zui-upsell__eyebrow"><?php esc_html_e( 'CEV PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
-					<h3 class="zui-upsell__title" id="cev-upsell-title">
-						<?php esc_html_e( 'Unlock Advanced Email Verification with CEV PRO', 'customer-email-verification-for-woocommerce' ); ?>
-					</h3>
-					<p class="zui-upsell__sub">
-						<?php esc_html_e( 'Secure your WooCommerce store with advanced email verification, login authentication, analytics, and anti-spam controls — beyond the basics included in the free plugin.', 'customer-email-verification-for-woocommerce' ); ?>
-					</p>
-				</div>
-			</header>
-
-			<ul class="zui-upsell__features">
-				<?php foreach ( $cev_pro_features as $cev_feature ) : ?>
-					<li class="zui-upsell__feature">
-						<span class="zui-upsell__check" aria-hidden="true"><?php $cev_print( $cev_upsell_check_svg ); ?></span>
-						<span class="zui-upsell__label">
-							<?php echo esc_html( $cev_feature['label'] ); ?>
-							<?php if ( ! empty( $cev_feature['is_new'] ) ) : ?>
-								<span class="zui-upsell__new"><?php esc_html_e( 'NEW', 'customer-email-verification-for-woocommerce' ); ?></span>
-							<?php endif; ?>
-						</span>
-					</li>
-				<?php endforeach; ?>
-			</ul>
-
-			<footer class="zui-upsell__foot">
-				<div class="zui-upsell__offer">
-					<span class="zui-upsell__offer-label"><?php esc_html_e( 'Launch offer', 'customer-email-verification-for-woocommerce' ); ?></span>
-					<span class="zui-upsell__offer-body">
-						<?php esc_html_e( 'Get 20% off — use code', 'customer-email-verification-for-woocommerce' ); ?>
-						<span class="zui-upsell__code">CEVPRO20</span>
-						<?php esc_html_e( 'at checkout.', 'customer-email-verification-for-woocommerce' ); ?>
-					</span>
-					<span class="zui-upsell__offer-note"><?php esc_html_e( '★ for new customers only', 'customer-email-verification-for-woocommerce' ); ?></span>
-				</div>
-				<a class="zui-upsell__cta" href="<?php echo esc_url( $cev_upgrade_url ); ?>" target="_blank" rel="noreferrer noopener">
-					<?php esc_html_e( 'Upgrade to CEV PRO', 'customer-email-verification-for-woocommerce' ); ?>
-					<span aria-hidden="true">→</span>
-				</a>
-			</footer>
-
-		</section>
 
 	</main>
 

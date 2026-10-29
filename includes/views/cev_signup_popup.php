@@ -1,4 +1,12 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+// This template is include()d from inside a class method, so the variables
+// below are function-scoped, not globals. PHPCS analyses the file in isolation
+// and cannot see that, hence the false positives.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 // === Safe static values ===
 $email = __( 'johny@example.com', 'customer-email-verification-for-woocommerce' );
 
@@ -40,6 +48,17 @@ $password_setup_link_enabled         = get_option( 'woocommerce_registration_gen
 $heading = get_option( 'cev_verification_header', $cev_verification_widget_message->defaults['cev_verification_header'] );
 $message = get_option( 'cev_verification_message', $cev_verification_widget_message->defaults['cev_verification_message'] );
 $footer_message = get_option( 'cev_verification_widget_footer', $cev_verification_widget_message->defaults['cev_verification_widget_footer'] );
+
+// A field cleared in the Customizer shows its default text (the field's placeholder), not a blank.
+if ( '' === trim( wp_strip_all_tags( (string) $heading ) ) ) {
+	$heading = $cev_verification_widget_message->defaults['cev_verification_header'];
+}
+if ( '' === trim( wp_strip_all_tags( (string) $message ) ) ) {
+	$message = $cev_verification_widget_message->defaults['cev_verification_message'];
+}
+if ( '' === trim( wp_strip_all_tags( (string) $footer_message ) ) ) {
+	$footer_message = $cev_verification_widget_message->defaults['cev_verification_widget_footer'];
+}
 $footer_message = WC_customer_email_verification_email_Common()->maybe_parse_merge_tags( $footer_message );
 // === Code length ===
 $code_length = get_option( 'cev_verification_code_length', 4 );

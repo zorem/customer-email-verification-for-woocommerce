@@ -209,6 +209,53 @@
 	padding-top: 4px;
 }
 
+/* ---- Wide dialog variant (consent / opt-in / onboarding modals) ---- */
+
+.zui-scope .zui-modal__dialog--wide {
+	max-width: 600px;
+}
+
+/* ---- Long-form prose body (multi-paragraph explanatory copy) ---- */
+
+.zui-scope .zui-modal__prose {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	font-size: var(--zui-fs-body);
+	line-height: var(--zui-lh-body);
+	color: var(--zui-text);
+}
+
+.zui-scope .zui-modal__prose p {
+	margin: 0;
+}
+
+.zui-scope .zui-modal__prose a {
+	color: var(--zui-primary);
+	text-decoration: underline;
+}
+
+.zui-scope .zui-modal__prose a:hover {
+	color: var(--zui-primary-hover);
+}
+
+/* ---- Opt-in checkbox cluster inside modal body ---- */
+
+.zui-scope .zui-modal__optin {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding-block-start: 14px;
+	border-block-start: 1px solid var(--zui-divider);
+}
+
+.zui-scope .zui-modal__optin-label {
+	margin: 0 0 4px;
+	font-size: var(--zui-fs-body);
+	font-weight: var(--zui-fw-semibold);
+	color: var(--zui-text-strong);
+}
+
 /* ---- Optional navigation icon buttons (prev/next in modal head) ---- */
 
 .zui-scope .zui-modal__navbtn {

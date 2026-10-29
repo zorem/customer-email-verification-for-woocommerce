@@ -1,0 +1,192 @@
+/* ============================================================
+   Zorem UI — Accordion  (collapsible card list)
+   ------------------------------------------------------------
+   Vertical stack of self-contained cards, each with a clickable
+   head that toggles a hidden body. The head is content-agnostic:
+   it accepts plain text, a `.zui-badge`, an icon + label, etc.,
+   and an optional right-aligned controls slot (toggle, action
+   button, etc.) plus a chevron.
+
+   Behavior:
+     - Click the head → toggles `.is-open` on the item, sets
+       `body.hidden`, sets `aria-expanded` on the head.
+     - Multi-open by default. Add `.zui-accordion--single` on the
+       container to enforce one-open-at-a-time.
+     - Add `[data-zui-accordion-default-open]` on an item to open
+       it on init.
+     - Clicks on nested form controls inside the head (e.g. a
+       `.zui-toggle`) are ignored — they operate independently.
+     - Emits CustomEvent `zui:accordiontoggle` on the item
+       (bubbles, `detail: { open }`).
+
+   Markup:
+     <div class="zui-accordion">
+       <div class="zui-accordion__item">
+         <button type="button" class="zui-accordion__head" aria-expanded="false">
+           <span class="zui-accordion__label">
+             <!-- Anything: plain text, badge, icon+text -->
+             <span class="zui-badge zui-badge--warning">
+               <span class="zui-badge__dot"></span>
+               Pending payment
+             </span>
+           </span>
+           <span class="zui-accordion__controls">
+             <!-- Optional: any right-aligned control -->
+             <label class="zui-toggle">…</label>
+             <span class="zui-accordion__chevron" aria-hidden="true">
+               <svg class="zui-icon">…</svg>
+             </span>
+           </span>
+         </button>
+         <div class="zui-accordion__body" hidden>
+           <!-- Any content -->
+         </div>
+       </div>
+     </div>
+
+   Modifiers:
+     .zui-accordion--single   Only one item may be open at a time.
+     .zui-accordion--flush    Removes card chrome (borders/shadow);
+                              items sit flat with only a divider.
+
+   States (on .zui-accordion__item):
+     .is-open       body visible, chevron rotated 180°, blue focus ring
+     .is-disabled   opacity 0.72 (used when a per-item toggle is off)
+   ============================================================ */
+
+/* ---- Container ---- */
+
+.zui-scope .zui-accordion {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.zui-scope .zui-accordion--flush {
+	gap: 0;
+}
+
+/* ---- Item ---- */
+
+.zui-scope .zui-accordion__item {
+	background: var(--zui-surface);
+	border: 1px solid var(--zui-border);
+	border-radius: var(--zui-radius-xl);
+	box-shadow: var(--zui-shadow-xs);
+	overflow: hidden;
+	transition: box-shadow var(--zui-dur) var(--zui-ease),
+	            border-color var(--zui-dur) var(--zui-ease);
+}
+
+.zui-scope .zui-accordion__item.is-open {
+	border-color: var(--zui-primary-200);
+	box-shadow: 0 0 0 2px rgba(59, 100, 211, 0.10),
+	            var(--zui-shadow-sm);
+}
+
+.zui-scope .zui-accordion__item.is-disabled {
+	opacity: 0.72;
+}
+
+/* Flush variant — items share a single vertical rule */
+
+.zui-scope .zui-accordion--flush .zui-accordion__item {
+	border: 0;
+	border-block-end: 1px solid var(--zui-divider);
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.zui-scope .zui-accordion--flush .zui-accordion__item:last-child {
+	border-block-end: 0;
+}
+
+.zui-scope .zui-accordion--flush .zui-accordion__item.is-open {
+	box-shadow: none;
+	border-color: var(--zui-divider);
+}
+
+/* ---- Head ---- */
+
+.zui-scope .zui-accordion__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	padding: 14px 16px;
+	background: transparent;
+	border: 0;
+	color: var(--zui-text);
+	font-family: inherit;
+	font-size: var(--zui-fs-body);
+	text-align: start;
+	cursor: pointer;
+}
+
+.zui-scope .zui-accordion__head:focus-visible {
+	outline: 2px solid var(--zui-primary);
+	outline-offset: -2px;
+}
+
+/* Left content slot — label / badge / icon+text */
+
+.zui-scope .zui-accordion__label {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	color: var(--zui-text-strong);
+	font-weight: var(--zui-fw-semibold);
+}
+
+/* Right content slot — toggles, action buttons, chevron */
+
+.zui-scope .zui-accordion__controls {
+	display: inline-flex;
+	align-items: center;
+	gap: 16px;
+	flex-shrink: 0;
+}
+
+/* ---- Chevron ---- */
+
+.zui-scope .zui-accordion__chevron {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border-radius: var(--zui-radius-md);
+	background: var(--zui-bg);
+	color: var(--zui-text-soft);
+	transition: transform var(--zui-dur) var(--zui-ease),
+	            background var(--zui-dur) var(--zui-ease);
+}
+
+.zui-scope .zui-accordion__head:hover .zui-accordion__chevron {
+	background: var(--zui-primary-50);
+	color: var(--zui-primary);
+}
+
+.zui-scope .zui-accordion__chevron .zui-icon {
+	width: 14px;
+	height: 14px;
+}
+
+.zui-scope .zui-accordion__item.is-open .zui-accordion__chevron {
+	transform: rotate(180deg);
+	background: var(--zui-primary-50);
+	color: var(--zui-primary);
+}
+
+/* ---- Body ---- */
+
+.zui-scope .zui-accordion__body {
+	padding: 16px;
+	border-block-start: 1px solid var(--zui-divider);
+}
+
+.zui-scope .zui-accordion__body[hidden] {
+	display: none;
+}

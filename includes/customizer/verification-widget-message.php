@@ -1,4 +1,8 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 /**
  * Customizer Setup and Custom Controls
  *
@@ -59,7 +63,11 @@ class Cev_Verification_Widget_Message {
 	 * @return bool
 	 */
 	public static function is_own_preview_request() {
-		return isset( $_REQUEST['action'] ) && ( 'preview_cev_verification_lightbox' === $_REQUEST['action'] || 'guest_user_preview_cev_verification_lightbox' === $_REQUEST['action'] );
+		// Read-only screen/preview check, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$cev_action = isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '';
+
+		return 'preview_cev_verification_lightbox' === $cev_action || 'guest_user_preview_cev_verification_lightbox' === $cev_action;
 	}
 	
 	/**
@@ -68,7 +76,11 @@ class Cev_Verification_Widget_Message {
 	 * @return bool
 	 */
 	public static function is_own_customizer_request() {
-		return isset( $_REQUEST['section'] ) && 'cev_verification_widget_messages' === $_REQUEST['section'];
+		// Read-only screen/preview check, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$cev_section = isset( $_REQUEST['section'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['section'] ) ) : '';
+
+		return 'cev_verification_widget_messages' === $cev_section;
 	}
 	
 	/**
@@ -101,7 +113,7 @@ class Cev_Verification_Widget_Message {
 		$customizer_defaults = array(
 			'cev_verification_popup_background_color'	=> '#f5f5f5',
 			'cev_verification_popup_overlay_background_color' => '#ffffff',
-			'cev_verification_header' => __( 'Verify its you.', 'customer-email-verification-for-woocommerce' ),
+			'cev_verification_header' => __( "Verify it's you.", 'customer-email-verification-for-woocommerce' ),
 			'cev_verification_message'	=> __( 'We sent a verification code. To verify your email address, please check your inbox and enter the code below.', 'customer-email-verification-for-woocommerce' ),
 			'cev_verification_widget_footer'  =>__( "Didn't receive an email? {cev_resend_verification}", 'customer-email-verification-for-woocommerce'),
 		);
@@ -141,7 +153,7 @@ class Cev_Verification_Widget_Message {
 			array(
 				'default' => $this->defaults['cev_verification_popup_background_color'],
 				'transport' => 'refresh',
-				'sanitize_callback' => '',
+				'sanitize_callback' => 'sanitize_hex_color',
 				'type' => 'option',
 			)
 		);
@@ -173,7 +185,7 @@ class Cev_Verification_Widget_Message {
 				'input_attrs' => array(
 					'class' => '',
 					'style' => '',
-					'placeholder' => __( $this->defaults['cev_verification_header'], 'customer-email-verification-for-woocommerce' ),			
+					'placeholder' => $this->defaults['cev_verification_header'],			
 				),
 			)
 			
@@ -197,7 +209,7 @@ class Cev_Verification_Widget_Message {
 				'input_attrs' => array(
 					'class' => '',
 					'style' => '',
-					'placeholder' => __( $this->defaults['cev_verification_message'], 'customer-email-verification-for-woocommerce' ),
+					'placeholder' => $this->defaults['cev_verification_message'],
 				),	
 			)
 		);
@@ -220,7 +232,7 @@ class Cev_Verification_Widget_Message {
 				'input_attrs' => array(
 					'class' => '',
 					'style' => '',
-					'placeholder' => __( $this->defaults['cev_verification_widget_footer'], 'customer-email-verification-for-woocommerce' ),
+					'placeholder' => $this->defaults['cev_verification_widget_footer'],
 				),
 			)
 		);
@@ -235,7 +247,8 @@ class Cev_Verification_Widget_Message {
 		$wp_customize->add_control( new WP_Customize_cev_codeinfoblock_Control( $wp_customize, 'cev_widzet_code_block',
 			array(
 				'label' => __( 'Available variables', 'customer-email-verification-for-woocommerce' ),
-				'description' => '<code>{cev_resend_verification}</code><br>You can use HTML tag : &lt;strong&gt;, &lt;i&gt;',
+				// The escaped translation turns the example tags into entities so they show as text.
+				'description' => '<code>{cev_resend_verification}</code><br>' . esc_html__( 'You can use HTML tags: <strong>, <i>', 'customer-email-verification-for-woocommerce' ),
 				'section' => 'cev_verification_widget_messages',			
 			)		
 		)
@@ -249,4 +262,4 @@ class Cev_Verification_Widget_Message {
  * Initialise our Customizer settings
  */
 
-$cev_verification_widget_message = new Cev_Verification_Widget_Message();
+new Cev_Verification_Widget_Message();

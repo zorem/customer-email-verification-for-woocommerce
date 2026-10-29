@@ -141,9 +141,9 @@ jQuery(document).on("click", ".cev_tab_input", function(){
 	window.history.pushState({path:url},'',url);	
 });
 
-jQuery(document).click(function(){
+jQuery(document).click(function(e){
 	var $trigger = jQuery(".cev_dropdown");
-    if($trigger !== event.target && !$trigger.has(event.target).length){
+    if(!$trigger.is(e.target) && !$trigger.has(e.target).length){
 		jQuery(".cev-dropdown-content").hide();
     }   
 });
@@ -222,9 +222,9 @@ jQuery( document ).on( "click", "#activity-panel-tab-help", function() {
 	jQuery( '.woocommerce-layout__activity-panel-wrapper' ).addClass( 'is-open is-switching' );
 });
 
-jQuery(document).click(function(){
+jQuery(document).click(function(e){
 	var $trigger = jQuery(".woocommerce-layout__activity-panel");
-    if($trigger !== event.target && !$trigger.has(event.target).length){
+    if(!$trigger.is(e.target) && !$trigger.has(e.target).length){
 		jQuery('#activity-panel-tab-help').removeClass( 'is-active' );
 		jQuery( '.woocommerce-layout__activity-panel-wrapper' ).removeClass( 'is-open is-switching' );
     }   
@@ -438,3 +438,114 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 /* activity-panel custom popup create end */
+/* PRO-locked settings rows — clicking (or Enter/Space on) a locked row opens
+   the shared "Available in CEV PRO" modal. The row carries its own title,
+   description and tagged upgrade URL in data-cev-pro-* attributes, so no
+   strings live in this file. The modal itself is the ZUI library's
+   .zui-modal; ZUI handles close buttons, backdrop and Escape. */
+(function () {
+	function openProModal( row ) {
+		var modal = document.getElementById( 'cev-pro-feature-modal' );
+		if ( ! modal || ! window.ZUI || ! window.ZUI.modal ) {
+			return;
+		}
+		var title = modal.querySelector( '.zui-modal__title' );
+		var desc  = modal.querySelector( '.cev-pro-feature-modal__desc' );
+		var cta   = modal.querySelector( '.cev-pro-feature-modal__cta' );
+		if ( title ) {
+			title.textContent = row.getAttribute( 'data-cev-pro-title' ) || '';
+		}
+		if ( desc ) {
+			desc.textContent = row.getAttribute( 'data-cev-pro-desc' ) || '';
+		}
+		if ( cta && row.getAttribute( 'data-cev-pro-url' ) ) {
+			cta.setAttribute( 'href', row.getAttribute( 'data-cev-pro-url' ) );
+		}
+		window.ZUI.modal.open( 'cev-pro-feature-modal' );
+	}
+
+	document.addEventListener( 'click', function ( e ) {
+		var row = e.target.closest ? e.target.closest( '.cev-pro-locked-field[data-cev-pro-url]' ) : null;
+		if ( ! row ) {
+			return;
+		}
+		e.preventDefault();
+		openProModal( row );
+	} );
+
+	document.addEventListener( 'keydown', function ( e ) {
+		if ( 'Enter' !== e.key && ' ' !== e.key ) {
+			return;
+		}
+		var row = e.target;
+		if ( ! row.matches || ! row.matches( '.cev-pro-locked-field[data-cev-pro-url]' ) ) {
+			return;
+		}
+		e.preventDefault();
+		openProModal( row );
+	} );
+})();
+
+/* Unverified Users "Resend verification email" + setup checklist actions.
+   All user-facing text comes from the server (response messages) or the
+   localized cev_vars.i18n object. */
+jQuery( function ( $ ) {
+	if ( 'undefined' === typeof cev_vars ) {
+		return;
+	}
+
+	function toast( $el, message, isError ) {
+		if ( isError ) {
+			$el.zorem_snackbar_warning( message );
+		} else {
+			$el.zorem_snackbar( message );
+		}
+	}
+
+	function messageFrom( response ) {
+		return ( response && response.data && response.data.message ) ? response.data.message : cev_vars.i18n.request_failed;
+	}
+
+	$( document ).on( 'click', '.cev_resend_button', function () {
+		var $btn = $( this );
+		$btn.closest( '.zui-actions-menu' ).attr( 'hidden', true );
+		$.post( cev_vars.ajax_url, {
+			action: 'cev_resend_signup_email',
+			nonce: cev_vars.resend_nonce,
+			id: $btn.data( 'id' )
+		} ).done( function ( response ) {
+			toast( $btn, messageFrom( response ), ! ( response && response.success ) );
+		} ).fail( function ( xhr ) {
+			toast( $btn, messageFrom( xhr.responseJSON ), true );
+		} );
+	} );
+
+	$( document ).on( 'click', '.cev-send-test-email', function () {
+		var $btn  = $( this );
+		var label = $btn.text();
+		$btn.prop( 'disabled', true ).text( cev_vars.i18n.sending );
+		$.post( cev_vars.ajax_url, {
+			action: 'cev_send_test_email',
+			nonce: cev_vars.checklist_nonce
+		} ).done( function ( response ) {
+			var ok = response && response.success;
+			toast( $btn, messageFrom( response ), ! ok );
+			if ( ok ) {
+				$btn.replaceWith( $( '<span class="zui-row__desc"></span>' ).text( messageFrom( response ) ) );
+			} else {
+				$btn.prop( 'disabled', false ).text( label );
+			}
+		} ).fail( function ( xhr ) {
+			toast( $btn, messageFrom( xhr.responseJSON ), true );
+			$btn.prop( 'disabled', false ).text( label );
+		} );
+	} );
+
+	$( document ).on( 'click', '.cev-dismiss-checklist', function () {
+		$( '#cev-setup-checklist' ).remove();
+		$.post( cev_vars.ajax_url, {
+			action: 'cev_dismiss_checklist',
+			nonce: cev_vars.checklist_nonce
+		} );
+	} );
+} );

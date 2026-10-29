@@ -59,7 +59,9 @@ class WC_Customer_Email_Verification_Preview {
 	*/
 	public function cev_pro_front_styles() {				
 		
-		$action = ( isset( $_REQUEST[ 'action' ] ) ? wc_clean( $_REQUEST[ 'action' ] ) : '' );
+		// Read-only check of the customizer preview action, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$action = ( isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '' );
 		
 		if ( 'preview_cev_verification_lightbox' == $action ) {
 			wp_enqueue_style( 'cev_front_style' );								
@@ -71,7 +73,9 @@ class WC_Customer_Email_Verification_Preview {
 	*/
 	public function preview_cev_page() {
 		
-		$action = ( isset( $_REQUEST[ 'action' ] ) ? wc_clean( $_REQUEST[ 'action' ] ) : '' );
+		// Read-only check of the customizer preview action, not form processing.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+		$action = ( isset( $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : '' );
 		
 		if ( 'preview_cev_verification_lightbox' != $action ) {
 			return;

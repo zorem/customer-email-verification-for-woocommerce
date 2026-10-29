@@ -1,4 +1,8 @@
 <?php
+// This template is include()d from inside a class method, so the variables
+// below are function-scoped, not globals. PHPCS analyses the file in isolation
+// and cannot see that, hence the false positives.
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 /**
  * Unverified Users tab body (ZUI redesign, Free).
  *
@@ -28,7 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 global $wpdb;
 
-// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
+// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 $cev_user_rows = $wpdb->get_results(
 	$wpdb->prepare(
 		"SELECT id, email, last_updated FROM {$wpdb->prefix}cev_user_log WHERE 1 = %d ORDER BY last_updated DESC",
@@ -36,7 +40,7 @@ $cev_user_rows = $wpdb->get_results(
 	),
 	ARRAY_A
 );
-// phpcs:enable
+// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder
 
 $cev_total_pending = is_array( $cev_user_rows ) ? count( $cev_user_rows ) : 0;
 
@@ -76,10 +80,7 @@ $cev_support_url = 'https://www.zorem.com/support/';
 			<button type="button" class="zui-sidebar__item" data-zui-section="maintenance">
 				<span class="zui-sidebar__icon"><?php $cev_print_html( $cev_icon( 'wrench' ) ); ?></span>
 				<span class="zui-sidebar__label"><?php esc_html_e( 'Maintenance', 'customer-email-verification-for-woocommerce' ); ?></span>
-				<span class="cev-pro-tag">
-					<span class="cev-pro-badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
-					<span class="cev-pro-lock-icon"><svg class="cev-pro-lock-svg" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-				</span>
+				<span class="zui-sidebar__badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
 			</button>
 		</nav>
 
@@ -141,9 +142,24 @@ $cev_support_url = 'https://www.zorem.com/support/';
 			</div>
 		</div>
 
+		<?php
+		// Verification stats (B2). Pending comes from the live query above so
+		// it always matches the table, even when the cached counts are older.
+		$cev_counts = cev_verification_stats()->get_counts();
+		?>
 		<p class="cev-stats-line">
+			<strong><?php echo esc_html( number_format_i18n( $cev_counts['this_month'] ) ); ?></strong>
+			<?php esc_html_e( 'verified this month', 'customer-email-verification-for-woocommerce' ); ?>
+			&middot;
+			<strong><?php echo esc_html( number_format_i18n( $cev_counts['total'] ) ); ?></strong>
+			<?php esc_html_e( 'verified in total', 'customer-email-verification-for-woocommerce' ); ?>
+			&middot;
 			<strong><?php echo esc_html( number_format_i18n( $cev_total_pending ) ); ?></strong>
 			<?php esc_html_e( 'pending verifications', 'customer-email-verification-for-woocommerce' ); ?>
+		</p>
+		<p class="zui-row__desc">
+			<?php esc_html_e( 'See your verification funnel, spam blocked and top blocked domains in the CEV PRO analytics dashboard.', 'customer-email-verification-for-woocommerce' ); ?>
+			<a href="<?php echo esc_url( woo_customer_email_verification()->get_pro_upgrade_url( 'locked-analytics' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Upgrade to PRO', 'customer-email-verification-for-woocommerce' ); ?></a>
 		</p>
 
 		<?php if ( ! empty( $cev_user_rows ) ) : ?>
@@ -257,6 +273,10 @@ $cev_support_url = 'https://www.zorem.com/support/';
 											<svg class="zui-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="5" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="12" cy="19" r="1.6"></circle></svg>
 										</button>
 										<div class="zui-actions-menu" role="menu" hidden>
+											<button type="button" role="menuitem" class="zui-actions-item cev_resend_button" data-id="<?php echo esc_attr( $cev_entry_id ); ?>">
+												<?php $cev_print_html( $cev_icon( 'mail' ) ); ?>
+												<?php esc_html_e( 'Resend verification email', 'customer-email-verification-for-woocommerce' ); ?>
+											</button>
 											<button type="button" role="menuitem" class="zui-actions-item zui-actions-item--danger delete_button" data-id="<?php echo esc_attr( $cev_entry_id ); ?>">
 												<?php $cev_print_html( $cev_icon( 'trash' ) ); ?>
 												<?php esc_html_e( 'Delete', 'customer-email-verification-for-woocommerce' ); ?>
@@ -290,8 +310,8 @@ $cev_support_url = 'https://www.zorem.com/support/';
 		/* ─── Maintenance pane (all features PRO-locked) ─────────────
 		 * Mirrors the Pro plugin's Maintenance tab layout — same four
 		 * cards (Auto-cleanup, Auto-delete accounts, Re-engagement,
-		 * Tools) — but every field is rendered with the PRO lock
-		 * pattern instead of a real control. Switched on via the
+		 * Tools) — under the unlock card, with every control shown
+		 * disabled as a read-only preview (same as AST Free). Switched on via the
 		 * sidebar's Maintenance item.
 		 */
 		?>
@@ -305,52 +325,60 @@ $cev_support_url = 'https://www.zorem.com/support/';
 							<h2 class="zui-section-header__title">
 								<?php esc_html_e( 'Maintenance', 'customer-email-verification-for-woocommerce' ); ?>
 							</h2>
+							<span class="zui-section-header__badge"><?php esc_html_e( 'PRO', 'customer-email-verification-for-woocommerce' ); ?></span>
 						</div>
 						<p class="zui-section-header__sub">
 							<?php esc_html_e( 'Keep your verification log and user list tidy with automated cleanup, account deletion, re-engagement emails and admin tools.', 'customer-email-verification-for-woocommerce' ); ?>
 						</p>
 					</div>
 				</div>
+				<div class="zui-section-header__actions">
+					<button type="button" class="zui-savebtn zui-savebtn--inert" disabled aria-disabled="true">
+						<span class="zui-savebtn__label"><?php esc_html_e( 'Save changes', 'customer-email-verification-for-woocommerce' ); ?></span>
+					</button>
+				</div>
 			</div>
 
-			<div class="zui-card">
+			<?php $admin_instance->render_lock_section( 'maintenance' ); ?>
+
+			<div class="zui-card zui-lock-section__preview" aria-hidden="true">
 				<div class="zui-card__head">
 					<h3 class="zui-card__title"><?php esc_html_e( 'Auto-cleanup unverified records', 'customer-email-verification-for-woocommerce' ); ?></h3>
 				</div>
-				<?php $admin_instance->render_settings_fields( $admin_instance->get_cev_maintenance_settings_data() ); ?>
+				<?php $admin_instance->render_settings_fields( $admin_instance->get_cev_maintenance_settings_data(), 'maintenance' ); ?>
 			</div>
 
-			<div class="zui-card">
+			<div class="zui-card zui-lock-section__preview" aria-hidden="true">
 				<div class="zui-card__head">
 					<h3 class="zui-card__title"><?php esc_html_e( 'Auto-delete unverified user accounts', 'customer-email-verification-for-woocommerce' ); ?></h3>
 				</div>
-				<?php $admin_instance->render_settings_fields( $admin_instance->get_cev_user_cleanup_settings_data() ); ?>
+				<?php $admin_instance->render_settings_fields( $admin_instance->get_cev_user_cleanup_settings_data(), 'maintenance' ); ?>
 			</div>
 
-			<div class="zui-card">
+			<div class="zui-card zui-lock-section__preview" aria-hidden="true">
 				<div class="zui-card__head">
 					<h3 class="zui-card__title"><?php esc_html_e( 'Re-engagement reminder emails', 'customer-email-verification-for-woocommerce' ); ?></h3>
 					<p class="zui-card__sub">
 						<?php esc_html_e( 'Bring lapsed sign-ups back. The plugin emails users who never finished verifying — at the intervals you choose — with a styled reminder and a one-click link to complete sign-up.', 'customer-email-verification-for-woocommerce' ); ?>
 					</p>
 				</div>
-				<?php $admin_instance->render_settings_fields( $admin_instance->get_cev_reengagement_settings_data() ); ?>
+				<?php $admin_instance->render_settings_fields( $admin_instance->get_cev_reengagement_settings_data(), 'maintenance' ); ?>
 			</div>
 
-			<div class="zui-card">
+			<div class="zui-card zui-lock-section__preview" aria-hidden="true">
 				<div class="zui-card__head">
 					<h3 class="zui-card__title"><?php esc_html_e( 'Tools', 'customer-email-verification-for-woocommerce' ); ?></h3>
 					<p class="zui-card__sub">
 						<?php esc_html_e( 'Force re-verify your customer base — e.g. after a spam attack, or on a fresh install over legacy accounts. Every verified customer is marked unverified and must re-confirm their email on their next login. Administrators, editors and shop managers are never affected.', 'customer-email-verification-for-woocommerce' ); ?>
 					</p>
 				</div>
-				<div class="zui-row zui-row--inline cev-pro-locked-field">
+				<div class="zui-row zui-row--inline cev-pro-locked-field cev-locked-row">
 					<div class="zui-row__head">
 						<span class="zui-row__label"><?php esc_html_e( 'Force re-verify all customers', 'customer-email-verification-for-woocommerce' ); ?></span>
 						<p class="zui-row__desc"><?php esc_html_e( 'Re-verify runs in the background; large stores are processed in batches.', 'customer-email-verification-for-woocommerce' ); ?></p>
 					</div>
 					<div class="zui-row__control">
-						<?php $admin_instance->render_pro_locked_control(); ?>
+						<?php $admin_instance->render_pro_locked_control( 'button', false ); ?>
 					</div>
 				</div>
 			</div>
